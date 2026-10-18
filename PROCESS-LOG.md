@@ -104,6 +104,7 @@ Expected depth:
 00:44 · DECISION · — · `/next-task` now records before the commit gate, checks the SDK, Docker and running processes when orienting, writes START entries, and flags features past 150% of estimate. `/ship-feature` runs the suite three times, once in parallel. The DEFAULTS row for R1 was added.
 00:47 · DECISION · — · `global.json` pins SDK 10.0.100 with `rollForward: latestFeature`, so any 10.0.x SDK from 10.0.100 up builds the repo and a .NET 8 or 11 SDK is never picked by accident. Applied from the F00 retro (C3).
 00:49 · SHIP · F00 · All 6 tasks and 7 criteria done. 36 tests pass on SDK 10.0.402, run twice in sequence and twice side by side. Task time was 82 minutes against an estimate of 25.
+00:55 · CHECKPOINT · — · F00 shipped. Its tasks took 82 minutes against 25, and active time is about 224 minutes against the 120-minute budget, about 173 minutes behind plan. Left: F01 (30 min) and F02 (25 min) in Must, and F03, F04, F06 and F11 (105 min) in Stretch. The AI recommended cutting Stretch. Chandan lifted the time limit and kept the full plan. `/cost` not given.
 
 ## Summary
 

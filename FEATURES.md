@@ -71,7 +71,7 @@ The brief's D1 to D4 apply as written: the append-only check-in log, a personal 
 
 ## Features
 
-Budget: 2 hours. Must comes to 80 minutes, which is 20 over half; Chandan approved this at 17:30. A checkpoint after F01 decides whether F02 stays in Must. Stretch features are built in the order listed, only if time remains.
+Budget: 2 hours. Must comes to 80 minutes, which is 20 over half; Chandan approved this at 17:30. A checkpoint after F01 decides whether F02 stays in Must. Stretch features are built in the order listed, only if time remains. At the 00:55 checkpoint, after F00 shipped at about 224 active minutes, Chandan lifted the fixed budget and kept the full plan, Stretch included.
 
 ### F00 Foundation
 Priority: Must · Status: Done · Branch: feature/F00-foundation · Estimate: 25 min
@@ -202,3 +202,4 @@ The brief's F05, F07 to F10, F12 and F14 to F19, the client logo (A11), the KMS 
 | 18:26 | F00.1 no longer creates `SecuPass.UnitTests`. It comes with the first domain logic, because Microsoft.Testing.Platform fails a run when a test project has zero tests. | Chandan, F00.1 approach gate |
 | 23:43 | F00 review added F00.4 to F00.6 as fix tasks, A14 (amends A13), D12, a README note, and two test additions to F01.1. | /review, Chandan |
 | 00:26 | F00.5 drops review item S2's code change. A probe showed ASP.NET Core already logs a started-response exception at Error with the correlation ID, so the change would have logged it twice. The test stays and pins this. | Chandan, F00.5 |
+| 00:55 | Checkpoint: no fixed time limit any more, and the plan stays as it was. Nothing is cut. | /checkpoint, Chandan |
