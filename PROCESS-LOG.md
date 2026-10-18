@@ -96,6 +96,12 @@ Expected depth:
 00:26 · AI-FIX · F00.5 · Review item S2 was wrong. The edge-case-hunter claimed a started-response exception lost its Error log, but a probe showed `ExceptionHandlerMiddleware` already logs it at Error with the exception and correlation ID. The AI had reproduced M1 but passed S2 on unchecked. The change is dropped and a test pins the framework behaviour. Both review agents and `/review` step 3 now require checking framework-behaviour claims before they are reported.
 00:27 · TASK · F00.5 · `BadHttpRequestExceptionHandler` returns the exception's 4xx as ProblemDetails with no detail and logs at Warning (A15). `JsonProblemDetailsFallbackWriter` writes ProblemDetails when the Accept header excludes JSON (A14). A test pins the framework's single Error log for exceptions after the response started (S2, no code change). 33 tests pass, and the 4 new S1 and A14 tests fail without the new code.
 00:35 · TASK · F00.6 · The Development migration log now lists only migrations applied by this host, from a before and after diff, and is skipped when none were. Chandan accepted that two hosts migrating at once can over-report. EF Core logs at Warning (D12). 36 tests pass, and the two new behaviour tests failed before the change.
+00:44 · RETRO · F00 · F00 took 82 minutes of task time against 25, mostly tooling: `.slnx`, the test runner, the Serilog static logger, and an SDK swap partway through. Repeated problems were a commit without diff approval, records written after the gate, an unverified framework claim, three tests that proved nothing, two leftover app processes, environment drift found mid-task, and a flake visible only under load. Chandan approved all eleven proposed changes.
+00:44 · RULE · R3 · Corrections in plain chat are handled as `/feedback`.
+00:44 · RULE · R4 · Every new test is seen failing without its code, and the commit gate shows the evidence.
+00:44 · RULE · R5 · Framework behaviour is checked with a test or probe before it shapes code, findings or decisions.
+00:44 · RULE · R6 · App processes started for manual runs are stopped and confirmed gone. Others are stopped only with Chandan's approval.
+00:44 · DECISION · — · `/next-task` now records before the commit gate, checks the SDK, Docker and running processes when orienting, writes START entries, and flags features past 150% of estimate. `/ship-feature` runs the suite three times, once in parallel. The DEFAULTS row for R1 was added.
 
 ## Summary
 

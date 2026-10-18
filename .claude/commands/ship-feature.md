@@ -4,7 +4,7 @@ description: Merge the finished feature to main with a merge commit and record i
 
 0. Confirm `/review` has run on this feature: a REVIEW entry for it exists in PROCESS-LOG.md, every accepted Must-fix task is ticked, and the only code commits after the REVIEW entry are those accepted fix tasks. If not, stop and tell me to run `/review` first. F00 Foundation is the one exception: a review is recommended but not required.
 1. Confirm every task and acceptance criterion for the current feature is ticked in FEATURES.md. If any are not, list them and ask whether to finish them or cut them with a reason.
-2. `dotnet build`, then `dotnet test --no-build`, and any checker the brief provides, on the branch. Stop on any failure.
+2. `dotnet build`, then `dotnet test --no-build`, and any checker the brief provides, on the branch. Run the suite three times, once with two runs side by side, to catch races that only show under load. Stop on any failure.
 3. Set the feature to Done in FEATURES.md. Append a SHIP entry to PROCESS-LOG.md with test count and `date +%H:%M`. Stage the changes, show me `git diff --staged`, and wait for my approval (R2). Then commit as `F0X: mark done` and push.
 4. Ask me to approve the merge to main, and wait (R2). Then merge, keeping every commit:
    - If `gh auth status` succeeds: `gh pr create --base main --fill`, with a body listing the acceptance criteria and the test result, then `gh pr merge --merge`. Do not pass `--delete-branch` and do not squash.

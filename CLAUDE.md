@@ -264,3 +264,7 @@ FEATURES.md, PROCESS-LOG.md, README.md and commit messages are read by other eng
 
 - R1: Ask every question that needs my answer through the interactive picker (AskUserQuestion), not as chat text. Each question lists clear options with the recommended one first and marked "(Recommended)", and the last choice is always Other with free text (the picker adds it). Approval gates still show the approach or diff as text, then ask for the decision in the picker.
 - R2: Nothing is committed, pushed or merged until I have reviewed and approved the staged diff. This covers every command (`/review`, `/pm-drill`, `/checkpoint`, `/ship-feature`, `/wrap-up`), not only `/next-task`. Stage the change, show `git diff --staged`, ask for approval in the picker, and wait.
+- R3: A correction I give in plain chat is handled as if I ran `/feedback`: log an AI-FIX, check earlier AI-FIX entries for the same pattern, and propose a rule if it repeats.
+- R4: Every new test is seen failing without the code it covers, by running it first or by briefly removing that code. The commit gate shows this evidence, or says why it wasn't possible.
+- R5: A claim about how a framework or library behaves (ASP.NET Core, EF Core, Serilog, the test host) is checked with a test or probe before it shapes code, a finding or a decision.
+- R6: Stop any app process you start for a manual run, and confirm none of yours remain. Never stop a process you didn't start without asking me.

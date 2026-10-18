@@ -13,6 +13,9 @@ Strength:
 | Merge each feature to main as soon as it passes; one open branch at a time | `main` is the single source of truth. Long-lived branches drift, conflict, and hide unfinished work. | Strong | Never. |
 | Merge commits, never squash; no force-push, rebase or amend | The full history shows how the work was done. Squashing or rewriting erases that record. | Strong | Never. |
 | Never create tags | Tags belong to the release process, not to feature work. | Strong | Never. |
+| R1: every question for me goes through the picker, recommended option first, Other last | Clicking a marked recommendation is faster and less ambiguous than answering long text questions. | Preference | Never during this session. |
+| R3: a correction in plain chat is handled like `/feedback` | Corrections came in chat, not through the command, and would otherwise skip the AI-FIX record and the pattern check. | Strong | Never. |
+| R6: stop app processes you start; ask before stopping one you didn't | Two leftover `dotnet run` processes locked the build output: one the AI forgot to stop, one mine. | Strong | Never. |
 | R2: no commit, push or merge without my approval of the staged diff, in every command | Running a command signals intent, not sign-off on its output. The `/review` commit recorded an assumption, a decision and scope changes that were never shown as a diff. | Strong | Never. |
 | Push after every commit | Unpushed work is invisible to everyone else and lost if the machine fails. | Strong | Never. |
 | One task per commit, about 20 minutes each | Small commits make the history readable and each step reviewable. Twenty minutes keeps each step small enough to review in a minute or two. | Preference | A task that can't be split without leaving a broken build. |
@@ -128,3 +131,5 @@ Strength:
 | `Method_Scenario_ExpectedResult` names | Failing test names read as bug reports. | Preference | The repo has another convention. |
 | xUnit `Assert` or Shouldly | Free, maintained, readable. | Preference | The repo uses another library. |
 | Build and test before every commit | Keeps main green and every commit a working checkpoint. | Strong | None. |
+| R4: every new test is seen failing without its code | Three F00 tests would have passed with the behaviour broken. | Strong | None. |
+| R5: framework behaviour is checked with a test or probe, not recalled | A review finding about ASP.NET Core logging was wrong, and its fix would have logged failures twice. | Strong | None. |
