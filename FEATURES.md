@@ -51,6 +51,7 @@ Only assumptions I approved. Code that depends on one cites its ID.
 | A13 | Error responses without a body, such as an unmatched route (404) or a wrong method (405), are returned as ProblemDetails with the correlation ID. | Clients then handle one error shape for every failure. | Chandan, 22:05 |
 | A14 | ProblemDetails error bodies are written whatever the request's `Accept` header says. Amends A13. | Without it, `Accept: text/plain` gets a plain-text 404 and an empty 500, so clients would see more than one error shape. | Chandan, 23:43 (F00 review N3) |
 | A15 | A malformed request (`BadHttpRequestException`, such as unreadable JSON or a body over the size limit) returns ProblemDetails with the exception's status and its standard title, with no `detail`. The framework's message goes only to the Warning log. | The response is the same in every environment, and parameter or type names don't leak. Field-level errors come from validation. | Chandan, 00:14 |
+| A16 | Identity's defaults apply. A password needs at least 6 characters with an upper-case letter, a lower-case letter, a digit and a symbol. Five failed logins lock the account for five minutes, and a locked account gets the same 401 as a wrong password. Access tokens last 1 hour and refresh tokens 14 days. | They are standard and need no configuration. Lockout slows password guessing, and the matching 401 doesn't reveal that an account exists. | Chandan, 01:01 |
 
 A4 (volunteer PWA) is frontend only and doesn't apply to this API.
 
@@ -68,6 +69,8 @@ The brief's D1 to D4 apply as written: the append-only check-in log, a personal 
 | D10 | No HTTP resilience handler for now. | The standard resilience handler on every `HttpClient`. | There are no outbound HTTP calls while D7's stand-ins are in place. |
 | D11 | Local development and Testcontainers both use `postgres:17-alpine`. A `compose.yaml` runs the local database. | A `docker run` line in the README, or bringing your own Postgres. Postgres 16 or 18. | One command gives a database matching the test engine. Postgres 17 is a mature major version that RDS supports. |
 | D12 | EF Core logs at Warning and above. SQL commands are not logged at Information in any environment. | Keep EF command logs at Information, which is the CLAUDE.md default of logging every dependency call with its duration. | Chandan's call at the F00 review (N4). Overrides the CLAUDE.md dependency-logging default for database calls. Failed commands still log at Error. |
+| D13 | Login and refresh are our own endpoints, `POST /auth/login` and `POST /auth/refresh`, which call `SignInManager` with Identity's bearer token scheme. `MapIdentityApi` isn't used. Amends D9. | `MapIdentityApi` with a filter that returns 404 for `/register`, or login only with no refresh. | A probe showed `MapIdentityApi` has no options and always maps `/register` and eight other endpoints, which would leave untested and undocumented endpoints exposed. The tokens are the same ones it would issue. |
+| D14 | Endpoints are closed by default: every feature maps onto a root route group with `RequireAuthorization()`, and anonymous endpoints say `AllowAnonymous`. A test fails if any mapped endpoint declares neither. | A fallback authorization policy, either as it is or with an exemption for requests that match no endpoint. | The fallback policy also applies when no endpoint matches and to the framework's 405 endpoint, so anonymous 404s and 405s became 401s, against A13 (seen in F01.1). An exemption for unmatched routes still leaves the 405. The test gives back the safety the fallback policy gave. Chandan, 01:16. |
 
 ## Features
 
@@ -98,12 +101,17 @@ Tasks:
 Wrap-up note: the README says production connection strings must set `Timeout`, so `/health/ready` fails fast instead of waiting for Npgsql's 15-second default (review N5).
 
 ### F01 Staff authentication and roles
-Priority: Must · Status: Todo · Branch: feature/F01-staff-auth · Estimate: 30 min
+Priority: Must · Status: In Progress · Branch: feature/F01-staff-auth · Estimate: 30 min
+
+Approach: `StaffUser : IdentityUser<Guid>` lives in `SecuPass.Infrastructure/Identity`, and `SecuPassDbContext` becomes an `IdentityDbContext` with Guid keys. The Admin, Staff and Client Viewer roles are seeded by the migration (`HasData`), so they exist in every environment, and their names are constants in `SecuPass.Domain/Identity/StaffRoles`. Identity's bearer token handler (`AddBearerToken`) is the only authentication scheme. `AddIdentityApiEndpoints` isn't used, because it also registers Identity's cookie scheme, and `MapIdentityApi` isn't called, because it has no options and always maps `/register` and eight other endpoints (probe, R5). Login and refresh are endpoints in `Api/Features/Identity` that call `SignInManager` with the bearer scheme (D13). `GET /auth/me` returns the caller's user ID, email and role. Features map onto a root route group that requires an authenticated user. Login, refresh, health and OpenAPI are marked `AllowAnonymous`, and a test fails if any mapped endpoint declares neither (D14). User management in F01.3 uses `UserManager` behind an Admin policy. Tests go through HTTP and create their own users with `UserManager`. The test factory turns the Development seed off. Risks: a refresh token could outlive deactivation, so F01.3 must check the active flag on refresh too.
 
 Acceptance criteria:
-- [ ] A user logs in with email and password and gets a bearer token. A wrong password or unknown email returns 401.
-- [ ] Any non-health endpoint called without a valid token returns 401.
-- [ ] Public self-registration isn't exposed: `POST /register` returns 404.
+- [x] A user logs in with email and password and gets a bearer token. A wrong password or unknown email returns 401.
+- [x] Five failed logins lock the account for five minutes, and a locked account gets the same 401 (A16).
+- [x] A valid refresh token returns a new bearer token. An invalid one returns 401 (D13).
+- [x] `GET /auth/me` returns the caller's user ID, email and role.
+- [x] Any non-health endpoint called without a valid token returns 401.
+- [x] Public self-registration isn't exposed: `POST /register` returns 404.
 - [ ] An Admin can create an Admin or Staff user with email, password and exactly one role. A missing or unknown role returns 400. A weak password returns 400 with Identity's reasons. A duplicate email returns 409.
 - [ ] Staff and Client Viewers calling user management get 403.
 - [ ] An Admin can deactivate and reactivate a user. After deactivation, that user's existing token gets 401 on the next request, and login fails. After reactivation, login works again (D9).
@@ -112,8 +120,9 @@ Acceptance criteria:
 - [ ] The Volunteer role isn't part of this feature. It comes with the brief's F09.
 
 Tasks:
-- [ ] F01.1 Identity with bearer login, the Admin, Staff and Client Viewer roles, `/register` not mapped, 401 for anonymous calls, and the Development Admin seed. Also rewrite `GetHealth_WithoutAuthorizationHeader_Returns200` so it proves `/health` stays anonymous, and add a 405 ProblemDetails test for the first method-specific endpoint (F00 review N1, A13).
-- [ ] F01.2 Admin user management (create, deactivate, reactivate) and the active-flag check on every authenticated request.
+- [x] F01.1 Identity with bearer login and refresh (D13), lockout (A16), the Admin, Staff and Client Viewer roles, `GET /auth/me`, no `/register`, and 401 for anonymous calls. Also rewrite `GetHealth_WithoutAuthorizationHeader_Returns200` so it proves `/health` stays anonymous, and add a 405 ProblemDetails test for the first method-specific endpoint (F00 review N1, A13).
+- [ ] F01.2 The Development Admin seed from validated options, turned off in tests.
+- [ ] F01.3 Admin user management (create, deactivate, reactivate) and the active-flag check on every authenticated request.
 
 ### F02 Clients
 Priority: Must · Status: Todo · Branch: feature/F02-clients · Estimate: 25 min
@@ -203,3 +212,5 @@ The brief's F05, F07 to F10, F12 and F14 to F19, the client logo (A11), the KMS 
 | 23:43 | F00 review added F00.4 to F00.6 as fix tasks, A14 (amends A13), D12, a README note, and two test additions to F01.1. | /review, Chandan |
 | 00:26 | F00.5 drops review item S2's code change. A probe showed ASP.NET Core already logs a started-response exception at Error with the correlation ID, so the change would have logged it twice. The test stays and pins this. | Chandan, F00.5 |
 | 00:55 | Checkpoint: no fixed time limit any more, and the plan stays as it was. Nothing is cut. | /checkpoint, Chandan |
+| 01:01 | F01.1 split: the Development Admin seed becomes F01.2 and user management becomes F01.3. Added D13 (amends D9), A16, and criteria for lockout, refresh and `GET /auth/me`. | Chandan, F01.1 approach gate |
+| 01:16 | D14 replaces the planned fallback authorization policy with an authenticated route group and an endpoint audit test. | Chandan, F01.1 build |

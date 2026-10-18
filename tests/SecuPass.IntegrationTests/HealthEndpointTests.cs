@@ -17,12 +17,15 @@ public sealed class HealthEndpointTests(SecuPassApiFactory factory) : IClassFixt
         Assert.Equal("Healthy", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
     }
 
-    [Fact]
-    public async Task GetHealth_WithoutAuthorizationHeader_Returns200()
+    // Every endpoint needs a token unless marked anonymous. Load balancers probe health without one.
+    [Theory]
+    [InlineData("/health")]
+    [InlineData("/health/ready")]
+    public async Task GetHealth_WithoutAuthorizationHeader_Returns200(string path)
     {
         using var client = factory.CreateClient();
 
-        using var response = await client.GetAsync("/health", TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

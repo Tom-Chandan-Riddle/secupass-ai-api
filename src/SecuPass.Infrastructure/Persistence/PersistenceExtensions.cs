@@ -31,8 +31,8 @@ public static partial class PersistenceExtensions
         var dbContext = scope.ServiceProvider.GetRequiredService<SecuPassDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<SecuPassDbContext>>();
 
-        // If another host migrates the same database at the same moment, this host can over-report:
-        // EF's lock means only one applies each migration, but both may see it as new here.
+        // Two hosts migrating the same database at the same moment don't wait for each other: the second
+        // fails with 42P07 (seen in F01.1). Development runs one host, and the tests migrate once up front.
         var appliedBefore = (await dbContext.Database.GetAppliedMigrationsAsync(cancellationToken)).ToHashSet();
         await dbContext.Database.MigrateAsync(cancellationToken);
         var newlyAppliedMigrations = (await dbContext.Database.GetAppliedMigrationsAsync(cancellationToken))

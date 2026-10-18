@@ -105,6 +105,13 @@ Expected depth:
 00:47 · DECISION · — · `global.json` pins SDK 10.0.100 with `rollForward: latestFeature`, so any 10.0.x SDK from 10.0.100 up builds the repo and a .NET 8 or 11 SDK is never picked by accident. Applied from the F00 retro (C3).
 00:49 · SHIP · F00 · All 6 tasks and 7 criteria done. 36 tests pass on SDK 10.0.402, run twice in sequence and twice side by side. Task time was 82 minutes against an estimate of 25.
 00:55 · CHECKPOINT · — · F00 shipped. Its tasks took 82 minutes against 25, and active time is about 224 minutes against the 120-minute budget, about 173 minutes behind plan. Left: F01 (30 min) and F02 (25 min) in Must, and F03, F04, F06 and F11 (105 min) in Stretch. The AI recommended cutting Stretch. Chandan lifted the time limit and kept the full plan. `/cost` not given.
+01:00 · START · F01.1 · Branch feature/F01-staff-auth cut from `65f0194`. Identity bearer login, the three staff roles, 401 for anonymous calls, no `/register`, and the Development Admin seed. A probe showed `MapIdentityApi` has no options and always maps `/register`, so D9 needs a decision before any code.
+01:01 · DECISION · D13 · Login and refresh are our own `/auth/login` and `/auth/refresh` endpoints over Identity's bearer scheme, not `MapIdentityApi`, which always maps `/register` and eight other endpoints. Amends D9.
+01:01 · ASSUME · A16 · Identity's default password rules, lockout after five failed logins for five minutes with the same 401, and 1-hour access and 14-day refresh tokens.
+01:01 · PLAN · F01 · F01.1 was about 45 minutes of work, so the Development Admin seed moves to F01.2 and user management to F01.3. `GET /auth/me` is added so the 401 rule and the role claims have a real endpoint to test against.
+01:16 · NOTE · F01.1 · With the first migration that creates tables, test hosts migrating the shared database in parallel failed with 42P07, so EF Core with Npgsql 10.0.3 doesn't serialise concurrent migrations. The F00 comment that said it did is corrected, and the test fixture now migrates the shared database once before any host starts.
+01:16 · DECISION · D14 · Endpoints are closed by an authenticated root route group plus a test that every endpoint declares `[Authorize]` or `[AllowAnonymous]`. The planned fallback policy turned 10 F00 tests' anonymous 404s and 405s into 401s.
+01:20 · TASK · F01.1 · Bearer login and refresh over Identity (D13) with lockout (A16), `GET /auth/me`, the three roles seeded by migration, no `/register`, and endpoints closed by the authenticated route group (D14). 67 tests pass. 15 mutations of the new code each turned their tests red, and the other new tests failed before the endpoints existed.
 
 ## Summary
 
