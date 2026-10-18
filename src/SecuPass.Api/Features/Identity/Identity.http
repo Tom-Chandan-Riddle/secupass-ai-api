@@ -118,3 +118,17 @@ Content-Type: application/json
   "password": "Any-Passw0rd!",
   "role": "Staff"
 }
+
+### Admin deactivates a user: 204. Their tokens stop working on the next request and login fails (D9, A23)
+# Replace the ID with a userId from the create request above.
+@userId = 00000000-0000-0000-0000-000000000000
+POST {{baseUrl}}/users/{{userId}}/deactivate
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+### Admin reactivates the user: 204. They can log in again, but tokens from before stay dead (A23)
+POST {{baseUrl}}/users/{{userId}}/reactivate
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+### Unknown user: 404 ProblemDetails
+POST {{baseUrl}}/users/{{$guid}}/deactivate
+Authorization: Bearer {{login.response.body.$.accessToken}}

@@ -6,6 +6,7 @@ using SecuPass.Api.Features.Identity.CurrentUser;
 using SecuPass.Api.Features.Identity.DevelopmentAdmin;
 using SecuPass.Api.Features.Identity.Login;
 using SecuPass.Api.Features.Identity.Refresh;
+using SecuPass.Api.Features.Identity.UserActivation;
 using SecuPass.Domain.Identity;
 using SecuPass.Infrastructure.Identity;
 using SecuPass.Infrastructure.Persistence;
@@ -37,6 +38,7 @@ public static class IdentityFeature
         services.AddScoped<RefreshHandler>();
         services.AddScoped<DevelopmentAdminSeeder>();
         services.AddScoped<CreateUserHandler>();
+        services.AddScoped<UserActivationHandler>();
         return services;
     }
 
@@ -61,6 +63,7 @@ public static class IdentityFeature
         var users = endpoints.MapGroup("/users").WithTags("Users")
             .RequireAuthorization(policy => policy.RequireRole(StaffRoles.Admin));
         users.MapCreateUser();
+        users.MapUserActivation();
         return endpoints;
     }
 }

@@ -128,6 +128,10 @@ Expected depth:
 02:10 · ASSUME · A23 · Every authenticated request checks the user exists, is active and still has the token's security stamp, so old tokens never come back after reactivation.
 02:10 · ASSUME · A24 · A token that no longer counts is treated as no token: protected endpoints return 401 and anonymous ones still work.
 02:16 · TASK · F01.4 · Staff users have an active flag that defaults to true for existing rows. A middleware drops the token of a missing, inactive or re-stamped user so the request runs as anonymous (A23, A24), and login and refresh refuse inactive users. 110 tests pass. 7 of the 9 new tests failed first, and 9 mutations proved all of them.
+02:21 · START · F01.5 · Base commit `77bfb60`. Admin deactivates and reactivates a user, with 404 for an unknown user. Chandan went on without the recommended checkpoint at 157% of F01's estimate.
+02:22 · ASSUME · A25 · An Admin deactivating their own account gets 422, so no Admin locks themselves out by accident.
+02:22 · ASSUME · A26 · Deactivating an inactive user or reactivating an active one returns 204 and changes nothing, so retries are safe.
+02:27 · TASK · F01.5 · `POST /users/{id}/deactivate` and `/reactivate` let an Admin end and restore a user's access. Deactivation also changes the security stamp, so old tokens stay dead after reactivation. 404 for unknown users, 422 for self-deactivation, and repeat calls are no-ops (A25, A26). 126 tests pass. 13 of 16 new tests failed first, and 10 mutations proved the rest.
 
 ## Summary
 

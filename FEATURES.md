@@ -60,6 +60,8 @@ Only assumptions I approved. Code that depends on one cites its ID.
 | A22 | Any email that passes the email format check can be a user's email, including characters such as `'`. Identity's user-name character list is cleared, because the user name is the email. | Identity's default list would reject valid addresses like `o'brien@client.com`. | Chandan, 02:01 |
 | A23 | Every authenticated request checks that the user still exists, is active, and has the same security stamp as the token. Otherwise the token no longer counts. | Deactivation takes effect on the next request (D9), and a token issued before deactivation, or before any later stamp change, never works again, even after reactivation. | Chandan, 02:10 |
 | A24 | A request whose token no longer counts is treated as anonymous: protected endpoints return 401, and anonymous endpoints such as `/health` still work. | It is the same outcome as sending no token, so there is no extra error case. | Chandan, 02:10 |
+| A25 | An Admin can't deactivate their own account. The request returns 422 with ProblemDetails. | It stops an Admin locking themselves out by accident or leaving no active Admin. 422 matches A10 for a well-formed request that breaks a business rule. | Chandan, 02:22 |
+| A26 | Deactivating an inactive user, or reactivating an active one, returns 204 and changes nothing. | The end state is what was asked for, so a retried request is safe. | Chandan, 02:22 |
 
 A4 (volunteer PWA) is frontend only and doesn't apply to this API.
 
@@ -122,17 +124,17 @@ Acceptance criteria:
 - [x] Public self-registration isn't exposed: `POST /register` returns 404.
 - [x] An Admin can create an Admin or Staff user with email, password and exactly one role. A missing or unknown role returns 400. A weak password returns 400 with Identity's reasons. A duplicate email returns 409.
 - [x] Staff and Client Viewers calling user management get 403.
-- [ ] An Admin can deactivate and reactivate a user. After deactivation, that user's existing token gets 401 on the next request, and login fails. After reactivation, login works again (D9).
-- [ ] Deactivating an unknown user returns 404.
+- [x] An Admin can deactivate and reactivate a user. After deactivation, that user's existing token gets 401 on the next request, and login fails. After reactivation, login works again (D9).
+- [x] Deactivating an unknown user returns 404.
 - [x] In Development, an Admin is seeded from validated options. No user is seeded in tests.
-- [ ] The Volunteer role isn't part of this feature. It comes with the brief's F09.
+- [x] The Volunteer role isn't part of this feature. It comes with the brief's F09.
 
 Tasks:
 - [x] F01.1 Identity with bearer login and refresh (D13), lockout (A16), the Admin, Staff and Client Viewer roles, `GET /auth/me`, no `/register`, and 401 for anonymous calls. Also rewrite `GetHealth_WithoutAuthorizationHeader_Returns200` so it proves `/health` stays anonymous, and add a 405 ProblemDetails test for the first method-specific endpoint (F00 review N1, A13).
 - [x] F01.2 The Development Admin seed from validated options, turned off in tests.
 - [x] F01.3 Admin creates an Admin or Staff user (`POST /users`), with 400, 403 and 409 cases (A20, A21).
 - [x] F01.4 The user's active flag, checked on every authenticated request with the security stamp (A23, A24), on login and on refresh (D9).
-- [ ] F01.5 Admin deactivates and reactivates a user, with 404 for an unknown user.
+- [x] F01.5 Admin deactivates and reactivates a user, with 404 for an unknown user.
 
 ### F02 Clients
 Priority: Must · Status: Todo · Branch: feature/F02-clients · Estimate: 25 min
