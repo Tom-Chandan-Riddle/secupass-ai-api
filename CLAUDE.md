@@ -173,7 +173,7 @@ Extensibility comes from structure, not from abstractions added in advance.
 - Configuration through options, so behaviour changes without code changes where the brief hints at it.
 - Introduce an interface or strategy only where the brief signals real variation (several providers, rule sets, formats). Name that variation point in the feature's Approach.
 - This repo (D7): AWS services have local stand-ins. `IQrTokenSigner` uses in-process ECDSA P-256 instead of KMS, `IEmailSender` uses a recording fake instead of SES, an outbox table with a `BackgroundService` replaces SQS, and uploads go to the API instead of S3. Don't add AWS SDKs without a CR.
-- This repo (D9): staff authenticate with ASP.NET Core Identity bearer tokens (`MapIdentityApi`, with `/register` not mapped). Every authenticated request checks the user's active flag. A cross-client read returns 404 (A9).
+- This repo (D9, D13, D14): staff authenticate with ASP.NET Core Identity bearer tokens through our own `/auth/login` and `/auth/refresh` endpoints. `MapIdentityApi` isn't used, so `/register` doesn't exist. Features map onto the authenticated root route group in `Program.cs`, and an anonymous endpoint says `AllowAnonymous`. Every authenticated request checks the user's active flag. A cross-client read returns 404 (A9).
 
 ## Errors
 

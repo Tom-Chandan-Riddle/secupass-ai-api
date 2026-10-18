@@ -1,0 +1,135 @@
+@baseUrl = http://localhost:5135
+# A17: the Admin seeded in Development from appsettings.Development.json.
+@email = admin@secupass.local
+@password = Dev-Admin-Passw0rd!
+
+### Log in: 200 with tokenType, accessToken, expiresIn (3600) and refreshToken
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Wrong password or unknown email: the same 401 ProblemDetails. Five failures lock the account for five minutes (A16)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "Wrong-Passw0rd!"
+}
+
+### Missing password: 400 with a field error
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### Wrong method: 405 ProblemDetails (A13)
+GET {{baseUrl}}/auth/login
+
+### Who am I: 200 with userId, email and role
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+### No token: 401 ProblemDetails
+GET {{baseUrl}}/auth/me
+
+### Refresh: 200 with a new token pair (D13)
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login.response.body.$.refreshToken}}"
+}
+
+### Invalid refresh token: 401 ProblemDetails
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "not-a-token"
+}
+
+### Self-registration isn't exposed: 404 ProblemDetails
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "someone@example.com",
+  "password": "Some-Passw0rd!"
+}
+
+### Admin creates a Staff user: 201 with userId, email and role, no Location header (A21)
+POST {{baseUrl}}/users
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "email": "staff-member@example.com",
+  "password": "Staff-Passw0rd!",
+  "role": "Staff"
+}
+
+### Same email again, in any case: 409 ProblemDetails
+POST {{baseUrl}}/users
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "email": "STAFF-MEMBER@example.com",
+  "password": "Staff-Passw0rd!",
+  "role": "Staff"
+}
+
+### ClientViewer, or any role other than exactly Admin or Staff: 400 with a Role error (A20)
+POST {{baseUrl}}/users
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "email": "viewer@example.com",
+  "password": "Viewer-Passw0rd!",
+  "role": "ClientViewer"
+}
+
+### Weak password: 400 with Identity's reasons under Password (A16)
+POST {{baseUrl}}/users
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "email": "weak@example.com",
+  "password": "weak",
+  "role": "Staff"
+}
+
+### No token: 401. A Staff or Client Viewer token: 403
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "email": "anyone@example.com",
+  "password": "Any-Passw0rd!",
+  "role": "Staff"
+}
+
+### Admin deactivates a user: 204. Their tokens stop working on the next request and login fails (D9, A23)
+# 422 for your own account (A25), or for the last active Admin (A31)
+# Replace the ID with a userId from the create request above.
+@userId = 00000000-0000-0000-0000-000000000000
+POST {{baseUrl}}/users/{{userId}}/deactivate
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+### Admin reactivates the user: 204. They can log in again, but tokens from before stay dead (A23)
+POST {{baseUrl}}/users/{{userId}}/reactivate
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+### Unknown user: 404 ProblemDetails
+POST {{baseUrl}}/users/{{$guid}}/deactivate
+Authorization: Bearer {{login.response.body.$.accessToken}}
