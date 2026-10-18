@@ -85,6 +85,9 @@ Expected depth:
 22:20 · DECISION · D11 · Local development and Testcontainers both use `postgres:17-alpine`, with a `compose.yaml` for the local database, so one command gives a database matching the test engine.
 22:28 · NOTE · — · The app process from F00.2's manual check was left running and locked a DLL, which failed the first F00.3 build. It was stopped by PID, and later manual runs confirm no process is left behind.
 22:28 · TASK · F00.3 · Npgsql `SecuPassDbContext` with validated `DatabaseOptions`, an empty `InitialCreate` migration applied at startup in Development, a shared Testcontainers Postgres fixture, and `/health/ready` returning 200 or 503. 22 tests pass.
+23:43 · REVIEW · F00 · Two agents (reviewer, edge-case-hunter) found 1 Must fix, 2 Should fix and 6 Notes. The Must fix is a flaky startup options test, reproduced in 2 of 6 runs under parallel load. All were accepted: M1, S1, S2 and N2 to N4 become F00.4 to F00.6, N1 and the 405 test move to F01.1, N5 becomes a README note, and N6 joins F00.4. Nothing was rejected. The AI recommended against N3 and N4, and Chandan chose them anyway.
+23:43 · ASSUME · A14 · ProblemDetails is written whatever the `Accept` header says, amending A13 so every error has one shape.
+23:43 · DECISION · D12 · EF Core logs at Warning, so SQL commands aren't logged at Information. This overrides the CLAUDE.md default of logging every dependency call, by Chandan's choice at review.
 
 ## Summary
 
