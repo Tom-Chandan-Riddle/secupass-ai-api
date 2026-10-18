@@ -144,6 +144,8 @@ Expected depth:
 03:08 · START · F01.8 · Base commit `3c590f5`. Login checks a dummy password hash for unknown and inactive emails, so timing doesn't reveal accounts (A28, review S5).
 03:10 · ASSUME · A28 · Extended to locked-out accounts. Identity answers a locked account without checking the password, about 1 ms, so after five wrong tries the fast answer revealed the account existed.
 03:14 · TASK · F01.8 · Login runs a check against a dummy hash, built with the app's hasher options, for unknown, inactive and locked-out accounts, so those 401s take about as long as a wrong password (A28). Locked-out accounts are now caught before Identity's sign-in, which skipped the password check. 143 tests pass, also with two runs side by side. The three timing tests failed at about 1.5 ms against 50 ms before the change, and four mutations turned them red again.
+03:17 · START · F01.9 · Base commit `acd000b`. Tests for the lockout ending, the token lifetime boundaries, refresh while locked out, and the correlation ID on every new error status (review S6, N1, N3, N4).
+03:24 · TASK · F01.9 · Tests only: the five-minute lockout and its end, refresh while locked out (pinned as intended), both sides of the 1-hour and 14-day token lifetimes, and the correlation ID on all eight Identity error statuses. The fake-clock tests confirmed the bearer handler validates expiry against the injected TimeProvider. 157 tests pass, and seven mutations turned each new test red.
 
 ## Summary
 

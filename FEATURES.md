@@ -142,7 +142,7 @@ Tasks:
 - [x] F01.6 fix: create user returns 400 for an email over 256 characters or containing whitespace (A27), and 409 when two creates race on one email (review M1, S2, S4).
 - [x] F01.7 fix: the active-user check skips anonymous endpoints, so `/health` never touches the database, and a concurrent deactivate or reactivate is retried once after a reload (A29) (review S1, S3).
 - [x] F01.8 fix: login checks a dummy password hash for unknown, inactive and locked-out accounts, so timing doesn't reveal accounts (A28) (review S5).
-- [ ] F01.9 fix: tests for the lockout ending, the token lifetime boundaries, refresh while locked out, and the correlation ID on every new error status (review S6, N1, N3, N4).
+- [x] F01.9 fix: tests for the lockout ending, the token lifetime boundaries, refresh while locked out, and the correlation ID on every new error status (review S6, N1, N3, N4).
 - [ ] F01.10 fix: refuse to deactivate the last active Admin, also when two Admins deactivate each other at once (review N2). The assumption is agreed at its approach gate.
 
 Review notes kept, not tasks: an authorization policy that names its own scheme, such as F09's volunteer auth, may re-authenticate and skip the active-user check, so the check must cover that scheme too (N5, unverified). The login, refresh and activation handlers take no `CancellationToken`, because Identity's `UserManager` and `SignInManager` calls accept none (N6).
