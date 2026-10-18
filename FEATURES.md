@@ -146,8 +146,17 @@ Tasks:
 - [x] F01.8 fix: login checks a dummy password hash for unknown, inactive and locked-out accounts, so timing doesn't reveal accounts (A28) (review S5).
 - [x] F01.9 fix: tests for the lockout ending, the token lifetime boundaries, refresh while locked out, and the correlation ID on every new error status (review S6, N1, N3, N4).
 - [x] F01.10 fix: refuse to deactivate the last active Admin, also when two Admins deactivate each other at once (A31, D15, review N2).
+- [ ] F01.11 fix: EF Core's own Error logs stop, so a handled 409 logs no Error and an unexpected database failure logs one Error, from the global handler (second review S1). Amends D12, with the details agreed at its approach gate.
 
 Review notes kept, not tasks: an authorization policy that names its own scheme, such as F09's volunteer auth, may re-authenticate and skip the active-user check, so the check must cover that scheme too (N5, unverified). The login, refresh and activation handlers take no `CancellationToken`, because Identity's `UserManager` and `SignInManager` calls accept none (N6).
+
+Second review notes kept, not tasks (Chandan, 04:03):
+- The A29 retry logs nothing when it recovers from a concurrency conflict, so how often it happens can't be seen.
+- A30's wrong-method case (405 with a token while the database is down) works but has no test.
+- A29's "a second conflict throws" works (500, one Error) but has no test.
+- An email containing a zero-width space (U+200B) passes A27's whitespace rule and creates a lookalike account.
+- The A28 timing tests only check a lower bound of half a wrong password's time, so a dummy check with half the iterations would still pass.
+- The last-Admin 422 path is reached in only about a third of race rounds, and its body and Warning log aren't asserted.
 
 ### F02 Clients
 Priority: Must · Status: Todo · Branch: feature/F02-clients · Estimate: 25 min
@@ -242,3 +251,4 @@ The brief's F05, F07 to F10, F12 and F14 to F19, the client logo (A11), the KMS 
 | 01:55 | F01.3 split: create user stays in F01.3, and deactivate, reactivate and the active-flag check move to F01.4. Added A20 and A21. | Chandan, F01.3 approach gate |
 | 02:10 | F01.4 split: the active flag and its checks stay in F01.4, and the deactivate and reactivate endpoints move to F01.5. Added A23 and A24. | Chandan, F01.4 approach gate |
 | 02:42 | F01 review added F01.6 to F01.10 as fix tasks, and A27 to A29 (amending A22, A16 and A26). | /review, Chandan |
+| 04:03 | Second F01 review added F01.11 (EF Core Error logs) and kept six notes. | /review, Chandan |

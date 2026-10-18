@@ -150,6 +150,7 @@ Expected depth:
 03:31 · ASSUME · A31 · Deactivating an Admin is refused with 422 when no other active Admin would remain, so mutual deactivation leaves one Admin.
 03:31 · DECISION · D15 · Deactivations are serialised with a Postgres advisory transaction lock, not a SERIALIZABLE transaction, because it needs no retry path and the lock ends with the transaction.
 03:38 · TASK · F01.10 · Deactivation takes a Postgres advisory transaction lock before reading the target, and refuses with 422 when the target is the last active Admin (A31, D15). The first race test still failed after the fix, because the shared test database holds Admins from other tests, so A31 rightly allowed both deactivations. The test now gives each round its own database with exactly two Admins. Without the lock every round lost both. 159 tests pass, also with two runs side by side.
+04:03 · REVIEW · F01 · Second review, of the fixes F01.6 to F01.10. The agents raised 0 Must fix, 1 Should fix and 6 Notes, and the AI reproduced the Should fix with probes: 9 of 19 racing 409s logged EF Core Errors, and one database-down 500 logged three Errors. Chandan accepted S1 as F01.11, which amends D12, declined N1 to N3 as tasks, and kept all six Notes (retry not logged, untested 405 and second-conflict cases, zero-width space in emails, lenient timing bound, 422 race path not deterministic) in FEATURES.md, so F01 can ship after S1.
 
 ## Summary
 
