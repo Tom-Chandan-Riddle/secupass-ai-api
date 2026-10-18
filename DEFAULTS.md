@@ -13,6 +13,7 @@ Strength:
 | Merge each feature to main as soon as it passes; one open branch at a time | `main` is the single source of truth. Long-lived branches drift, conflict, and hide unfinished work. | Strong | Never. |
 | Merge commits, never squash; no force-push, rebase or amend | The full history shows how the work was done. Squashing or rewriting erases that record. | Strong | Never. |
 | Never create tags | Tags belong to the release process, not to feature work. | Strong | Never. |
+| R2: no commit, push or merge without my approval of the staged diff, in every command | Running a command signals intent, not sign-off on its output. The `/review` commit recorded an assumption, a decision and scope changes that were never shown as a diff. | Strong | Never. |
 | Push after every commit | Unpushed work is invisible to everyone else and lost if the machine fails. | Strong | Never. |
 | One task per commit, about 20 minutes each | Small commits make the history readable and each step reviewable. Twenty minutes keeps each step small enough to review in a minute or two. | Preference | A task that can't be split without leaving a broken build. |
 | FEATURES.md as the single plan, PROCESS-LOG.md as the record | One place for scope prevents drift between chat, code and docs, and lets anyone see the plan and its status. | Strong | Never. |

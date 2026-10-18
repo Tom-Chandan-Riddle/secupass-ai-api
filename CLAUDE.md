@@ -235,7 +235,7 @@ Nothing changes without my approval. There are two gates per task, and no more:
 
 A new feature also gets an approach, written into FEATURES.md and approved, before its first task.
 
-When I run a command, that's my approval for its mechanical steps: updating FEATURES.md and PROCESS-LOG.md, committing them, pushing, merging. Any change to code, scope, assumptions or rules still goes through a gate.
+When I run a command, that's my approval for preparing its mechanical steps, such as updating FEATURES.md and PROCESS-LOG.md. It is not approval to commit. Every commit, push and merge waits for my approval of the staged diff, including a command's docs-only commit (R2). Any change to code, scope, assumptions or rules also goes through a gate.
 
 ## Working style
 
@@ -263,3 +263,4 @@ FEATURES.md, PROCESS-LOG.md, README.md and commit messages are read by other eng
 <!-- /feedback appends rules here as R1, R2... -->
 
 - R1: Ask every question that needs my answer through the interactive picker (AskUserQuestion), not as chat text. Each question lists clear options with the recommended one first and marked "(Recommended)", and the last choice is always Other with free text (the picker adds it). Approval gates still show the approach or diff as text, then ask for the decision in the picker.
+- R2: Nothing is committed, pushed or merged until I have reviewed and approved the staged diff. This covers every command (`/review`, `/pm-drill`, `/checkpoint`, `/ship-feature`, `/wrap-up`), not only `/next-task`. Stage the change, show `git diff --staged`, ask for approval in the picker, and wait.

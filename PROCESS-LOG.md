@@ -88,6 +88,8 @@ Expected depth:
 23:43 · REVIEW · F00 · Two agents (reviewer, edge-case-hunter) found 1 Must fix, 2 Should fix and 6 Notes. The Must fix is a flaky startup options test, reproduced in 2 of 6 runs under parallel load. All were accepted: M1, S1, S2 and N2 to N4 become F00.4 to F00.6, N1 and the 405 test move to F01.1, N5 becomes a README note, and N6 joins F00.4. Nothing was rejected. The AI recommended against N3 and N4, and Chandan chose them anyway.
 23:43 · ASSUME · A14 · ProblemDetails is written whatever the `Accept` header says, amending A13 so every error has one shape.
 23:43 · DECISION · D12 · EF Core logs at Warning, so SQL commands aren't logged at Information. This overrides the CLAUDE.md default of logging every dependency call, by Chandan's choice at review.
+23:48 · AI-FIX · review · The `docs: review F00` commit (1cd2c84) was committed and pushed without showing Chandan the diff. It added A14, D12, a scope change to F01.1 and three fix tasks. CLAUDE.md read a command as approval to commit, which conflicts with its own gate rule for assumptions and scope.
+23:48 · RULE · R2 · Nothing is committed, pushed or merged until Chandan approves the staged diff, in every command. Added to CLAUDE.md and DEFAULTS.md, and as an explicit gate step in review, pm-drill, checkpoint, ship-feature and wrap-up.
 
 ## Summary
 
