@@ -50,6 +50,7 @@ Only assumptions I approved. Code that depends on one cites its ID.
 | A12 | An incoming `X-Correlation-ID` is used only if it is 1 to 64 characters of letters, digits, `-`, `_`, `.` and `:`. Otherwise the API generates a new ID, returns that one, and logs a Warning. The request still proceeds. | The value is logged and echoed, so an unchecked one allows log and header injection. A tracing header should never fail a request. | Chandan, 22:05 |
 | A13 | Error responses without a body, such as an unmatched route (404) or a wrong method (405), are returned as ProblemDetails with the correlation ID. | Clients then handle one error shape for every failure. | Chandan, 22:05 |
 | A14 | ProblemDetails error bodies are written whatever the request's `Accept` header says. Amends A13. | Without it, `Accept: text/plain` gets a plain-text 404 and an empty 500, so clients would see more than one error shape. | Chandan, 23:43 (F00 review N3) |
+| A15 | A malformed request (`BadHttpRequestException`, such as unreadable JSON or a body over the size limit) returns ProblemDetails with the exception's status and its standard title, with no `detail`. The framework's message goes only to the Warning log. | The response is the same in every environment, and parameter or type names don't leak. Field-level errors come from validation. | Chandan, 00:14 |
 
 A4 (volunteer PWA) is frontend only and doesn't apply to this API.
 
@@ -91,7 +92,7 @@ Tasks:
 - [x] F00.2 Correlation ID middleware, Serilog JSON request logging, global `IExceptionHandler` with ProblemDetails, OpenAPI with Scalar.
 - [x] F00.3 Npgsql `DbContext` with migrations auto-applied in Development, a Testcontainers Postgres fixture for integration tests, and `/health/ready`.
 - [x] F00.4 fix: replace the flaky startup options test with a direct `IStartupValidator` test, and add the whitespace connection string, repeated `X-Correlation-ID` and Staging cases (review M1, N6).
-- [ ] F00.5 fix: `BadHttpRequestException` returns its own 4xx ProblemDetails logged at Warning, an exception after the response started is logged at Error with the correlation ID, and ProblemDetails is written whatever the `Accept` header (review S1, S2, N3, A14).
+- [x] F00.5 fix: `BadHttpRequestException` returns its own 4xx ProblemDetails logged at Warning, an exception after the response started is logged at Error with the correlation ID (S2: no code change, because ASP.NET Core already does this, and a test now pins it), and ProblemDetails is written whatever the `Accept` header (review S1, S2, N3, A14).
 - [ ] F00.6 fix: the migration log names only migrations actually applied and is skipped when none were, and EF Core logs at Warning (review N2, D12).
 
 Wrap-up note: the README says production connection strings must set `Timeout`, so `/health/ready` fails fast instead of waiting for Npgsql's 15-second default (review N5).
@@ -200,3 +201,4 @@ The brief's F05, F07 to F10, F12 and F14 to F19, the client logo (A11), the KMS 
 | 17:30 | Plan created at kickoff: F00 to F02 are Must, and F03, F04, F06 and F11 are Stretch. | /kickoff, Chandan's answers |
 | 18:26 | F00.1 no longer creates `SecuPass.UnitTests`. It comes with the first domain logic, because Microsoft.Testing.Platform fails a run when a test project has zero tests. | Chandan, F00.1 approach gate |
 | 23:43 | F00 review added F00.4 to F00.6 as fix tasks, A14 (amends A13), D12, a README note, and two test additions to F01.1. | /review, Chandan |
+| 00:26 | F00.5 drops review item S2's code change. A probe showed ASP.NET Core already logs a started-response exception at Error with the correlation ID, so the change would have logged it twice. The test stays and pins this. | Chandan, F00.5 |

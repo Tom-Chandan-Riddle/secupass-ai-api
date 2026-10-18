@@ -29,3 +29,5 @@ Never suggest adding a pattern or layer unless it fixes a concrete problem you c
 Run `dotnet build` and `dotnet test` and report the result.
 
 Output: a list ranked Must fix, Should fix, Note. Each item: file and line, the problem in one sentence, the concrete failure it causes, the fix in one sentence. If something is fine, don't mention it. If you're not sure it's a real problem, leave it out.
+
+Verify before you report. A claim about how a framework or library behaves (what ASP.NET Core, EF Core, Serilog or the test host logs, throws or returns) must be checked by running it: an existing test, a temporary probe test you then remove, or a run of the app. If you can't check it, mark the finding Unverified and rank it no higher than Note. The F00 review raised a Should fix claiming a started-response exception lost its Error log. A probe showed ASP.NET Core already logs it at Error with the correlation ID, so the proposed fix would have logged it twice.

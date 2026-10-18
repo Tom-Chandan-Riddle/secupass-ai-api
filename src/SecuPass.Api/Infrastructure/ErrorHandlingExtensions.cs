@@ -8,6 +8,10 @@ public static class ErrorHandlingExtensions
     {
         services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
             context.ProblemDetails.Extensions[CorrelationIdExtensionName] = context.HttpContext.GetCorrelationId());
+        services.AddSingleton<IProblemDetailsWriter, JsonProblemDetailsFallbackWriter>();
+
+        // Handlers run in registration order. The global handler takes whatever the others decline.
+        services.AddExceptionHandler<BadHttpRequestExceptionHandler>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         return services;
     }
