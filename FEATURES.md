@@ -118,7 +118,7 @@ Tasks:
 Wrap-up note: the README says production connection strings must set `Timeout`, so `/health/ready` fails fast instead of waiting for Npgsql's 15-second default (review N5).
 
 ### F01 Staff authentication and roles
-Priority: Must · Status: In Progress · Branch: feature/F01-staff-auth · Estimate: 30 min
+Priority: Must · Status: Done · Branch: feature/F01-staff-auth · Estimate: 30 min
 
 Approach: `StaffUser : IdentityUser<Guid>` lives in `SecuPass.Infrastructure/Identity`, and `SecuPassDbContext` becomes an `IdentityDbContext` with Guid keys. The Admin, Staff and Client Viewer roles are seeded by the migration (`HasData`), so they exist in every environment, and their names are constants in `SecuPass.Domain/Identity/StaffRoles`. Identity's bearer token handler (`AddBearerToken`) is the only authentication scheme. `AddIdentityApiEndpoints` isn't used, because it also registers Identity's cookie scheme, and `MapIdentityApi` isn't called, because it has no options and always maps `/register` and eight other endpoints (probe, R5). Login and refresh are endpoints in `Api/Features/Identity` that call `SignInManager` with the bearer scheme (D13). `GET /auth/me` returns the caller's user ID, email and role. Features map onto a root route group that requires an authenticated user. Login, refresh, health and OpenAPI are marked `AllowAnonymous`, and a test fails if any mapped endpoint declares neither (D14). User management in F01.3 to F01.5 uses `UserManager` behind an Admin policy. Tests go through HTTP and create their own users with `UserManager`. The test factory turns the Development seed off. Risks: a refresh token could outlive deactivation, so F01.4 checks the active flag on refresh too.
 

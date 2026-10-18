@@ -154,6 +154,7 @@ Expected depth:
 04:05 · START · F01.11 · Base commit `6858ffb`. EF Core's own Error logs stop, so a handled 409 logs no Error and an unexpected database failure logs one, from the global handler (second review S1).
 04:06 · DECISION · D16 · EF Core's four failure events log at Debug, not Error, so handled 409s log no Error and an unexpected database failure logs one, from the global handler. Amends D12.
 04:10 · TASK · F01.11 · EF Core's CommandError, SaveChangesFailed, ConnectionError and QueryIterationFailed now log at Debug (D16). A racing 409 logs no Error, and a database-down 500 logs one Error, from the global handler. A probe confirmed the failing SQL still appears at Debug. 161 tests pass. Both new tests failed first, and each of the four event mappings, put back at Error, turns its test red.
+04:15 · SHIP · F01 · All 11 tasks and 12 criteria done after two reviews. 161 tests pass with 0 build warnings, run once alone and twice side by side. Task time was 92 minutes against an estimate of 30, because the two planned tasks became five and the two reviews added six fixes.
 
 ## Summary
 
