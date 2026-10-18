@@ -64,6 +64,7 @@ The brief's D1 to D4 apply as written: the append-only check-in log, a personal 
 | D8 | Serilog with JSON console output. | Built-in `ILogger` console logging. | The brief names Serilog. Code still logs through `ILogger<T>`. |
 | D9 | ASP.NET Core Identity with `MapIdentityApi` bearer tokens and roles as claims. Every authenticated request checks the user's active flag. | A development-only header auth scheme, or a hand-rolled JWT. | The architecture assumes Identity. The per-request check locks out a deactivated user immediately, which meets the brief's one-minute rule. |
 | D10 | No HTTP resilience handler for now. | The standard resilience handler on every `HttpClient`. | There are no outbound HTTP calls while D7's stand-ins are in place. |
+| D11 | Local development and Testcontainers both use `postgres:17-alpine`. A `compose.yaml` runs the local database. | A `docker run` line in the README, or bringing your own Postgres. Postgres 16 or 18. | One command gives a database matching the test engine. Postgres 17 is a mature major version that RDS supports. |
 
 ## Features
 
@@ -86,7 +87,7 @@ Acceptance criteria:
 Tasks:
 - [x] F00.1 Solution, Api, Domain and Infrastructure projects, `.gitignore`, `Directory.Build.props`, `.editorconfig`, the integration test project, and `/health` with a passing HTTP test. `SecuPass.UnitTests` is added with the first domain logic, because an empty test project fails `dotnet test`.
 - [x] F00.2 Correlation ID middleware, Serilog JSON request logging, global `IExceptionHandler` with ProblemDetails, OpenAPI with Scalar.
-- [ ] F00.3 Npgsql `DbContext` with migrations auto-applied in Development, a Testcontainers Postgres fixture for integration tests, and `/health/ready`.
+- [x] F00.3 Npgsql `DbContext` with migrations auto-applied in Development, a Testcontainers Postgres fixture for integration tests, and `/health/ready`.
 
 ### F01 Staff authentication and roles
 Priority: Must · Status: Todo · Branch: feature/F01-staff-auth · Estimate: 30 min

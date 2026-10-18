@@ -3,6 +3,9 @@
 ### Liveness: 200 "Healthy", never touches a dependency
 GET {{baseUrl}}/health
 
+### Readiness: 200 "Healthy" when Postgres is reachable, 503 "Unhealthy" when it isn't (try `docker compose stop`)
+GET {{baseUrl}}/health/ready
+
 ### A correlation ID sent by the caller is echoed in X-Correlation-ID
 GET {{baseUrl}}/health
 X-Correlation-ID: demo-request-001

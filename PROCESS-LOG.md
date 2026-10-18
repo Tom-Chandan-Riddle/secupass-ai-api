@@ -82,6 +82,9 @@ Expected depth:
 22:05 · ASSUME · A13 · Bodyless error responses such as unmatched-route 404s and 405s are returned as ProblemDetails, so clients see one error shape.
 22:17 · AI-FIX · F00.2 · The first Serilog setup let `AddSerilog` own the static `Log.Logger`, so parallel test hosts logged into each other's sinks, and the fix then silenced request logs until the request middleware was given the DI logger. The failing log tests caught both before review.
 22:17 · TASK · F00.2 · Correlation ID middleware (A12), Serilog JSON request logging, a global exception handler returning 500 ProblemDetails with `correlationId`, ProblemDetails for bodyless errors (A13), and OpenAPI with Scalar in Development only. 17 tests pass.
+22:20 · DECISION · D11 · Local development and Testcontainers both use `postgres:17-alpine`, with a `compose.yaml` for the local database, so one command gives a database matching the test engine.
+22:28 · NOTE · — · The app process from F00.2's manual check was left running and locked a DLL, which failed the first F00.3 build. It was stopped by PID, and later manual runs confirm no process is left behind.
+22:28 · TASK · F00.3 · Npgsql `SecuPassDbContext` with validated `DatabaseOptions`, an empty `InitialCreate` migration applied at startup in Development, a shared Testcontainers Postgres fixture, and `/health/ready` returning 200 or 503. 22 tests pass.
 
 ## Summary
 
