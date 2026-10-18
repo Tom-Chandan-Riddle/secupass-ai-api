@@ -1,10 +1,15 @@
 using System.Net;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+
+using Npgsql;
 
 using SecuPass.Domain.Identity;
 using SecuPass.Infrastructure.Identity;
+using SecuPass.Infrastructure.Persistence;
 using SecuPass.IntegrationTests.Support;
 
 using Serilog.Events;
@@ -144,6 +149,57 @@ public sealed class UserActivationTests(SecuPassApiFactory factory) : IClassFixt
         Assert.True(await IsActiveAsync(target));
     }
 
+    // A29: simultaneous repeats race on Identity's concurrency stamp. The losers reload, find the work done, and return 204.
+    [Theory]
+    [InlineData(Deactivate)]
+    [InlineData(Reactivate)]
+    public async Task ChangeActivation_SameUserConcurrently_AllReturn204AndChangeItOnce(string action)
+    {
+        const int simultaneousRequests = 10;
+        using var admin = await LoggedInClientAsync(StaffRoles.Admin);
+        var target = await factory.CreateStaffUserAsync(StaffRoles.Staff);
+        if (action == Reactivate)
+        {
+            await factory.SetActiveInDatabaseAsync(target, isActive: false);
+        }
+
+        var responses = await Task.WhenAll(Enumerable.Range(0, simultaneousRequests).Select(_ =>
+            admin.Client.PostJsonAsync(ActionPath(target.Id, action), new { }, accessToken: admin.Tokens.AccessToken)));
+
+        var statuses = responses.Select(response => response.StatusCode).ToList();
+        foreach (var response in responses)
+        {
+            response.Dispose();
+        }
+
+        Assert.All(statuses, status => Assert.Equal(HttpStatusCode.NoContent, status));
+        Assert.Equal(action == Reactivate, await IsActiveAsync(target));
+        Assert.Single(factory.LogSink.AllEvents, logEvent =>
+            logEvent.Level == LogEventLevel.Information
+            && CapturingLogSink.PropertyText(logEvent, "UserId") == target.Id.ToString()
+            && logEvent.MessageTemplate.Text.Contains($"{action}d", StringComparison.Ordinal));
+    }
+
+    // A29: another write (like a failed login updating the lockout counter) changes the user's concurrency stamp just
+    // before the deactivation saves. The handler must re-read the user, not trust its own unsaved change, and try again.
+    [Fact]
+    public async Task Deactivate_WhenAnotherWriteChangesTheUserFirst_RetriesAndEndsInactive()
+    {
+        var target = await factory.CreateStaffUserAsync(StaffRoles.Staff);
+        var concurrentEdit = new ConcurrentEditBeforeFirstSave(target.Id);
+        using var conflictHost = factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+            services.ConfigureDbContext<SecuPassDbContext>(options => options.AddInterceptors(concurrentEdit))));
+        var admin = await conflictHost.CreateStaffUserAsync(StaffRoles.Admin);
+        using var client = conflictHost.CreateClient();
+        var tokens = await client.LoginAsync(admin);
+
+        using var response = await client.PostJsonAsync(ActionPath(target.Id, Deactivate), new { }, accessToken: tokens.AccessToken);
+
+        Assert.True(concurrentEdit.HasEdited);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.False(await IsActiveAsync(target));
+    }
+
     [Theory]
     [InlineData(Deactivate)]
     [InlineData(Reactivate)]
@@ -189,6 +245,34 @@ public sealed class UserActivationTests(SecuPassApiFactory factory) : IClassFixt
         await using var scope = factory.Services.CreateAsyncScope();
         var user = await scope.ServiceProvider.GetRequiredService<UserManager<StaffUser>>().FindByIdAsync(testUser.Id.ToString());
         return user ?? throw new InvalidOperationException("Test user not found.");
+    }
+
+    // Plays the part of another request: changes the user's concurrency stamp on a separate connection, once.
+    private sealed class ConcurrentEditBeforeFirstSave(Guid userId) : SaveChangesInterceptor
+    {
+        public bool HasEdited { get; private set; }
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (!HasEdited && eventData.Context is { } context && IsSavingUser(context))
+            {
+                HasEdited = true;
+                await using var connection = new NpgsqlConnection(context.Database.GetConnectionString());
+                await connection.OpenAsync(cancellationToken);
+                await using var command = new NpgsqlCommand(
+                    """UPDATE "AspNetUsers" SET "ConcurrencyStamp" = @stamp WHERE "Id" = @id""", connection);
+                command.Parameters.AddWithValue("stamp", Guid.NewGuid().ToString());
+                command.Parameters.AddWithValue("id", userId);
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+
+        private bool IsSavingUser(DbContext context) =>
+            context.ChangeTracker.Entries<StaffUser>()
+                .Any(entry => entry.State == EntityState.Modified && entry.Entity.Id == userId);
     }
 
     private sealed record LoggedInUser(TestStaffUser User, HttpClient Client, TokenResponse Tokens) : IDisposable

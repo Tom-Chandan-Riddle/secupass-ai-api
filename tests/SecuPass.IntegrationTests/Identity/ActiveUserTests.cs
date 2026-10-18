@@ -1,5 +1,8 @@
 using System.Net;
 
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+
 using SecuPass.Domain.Identity;
 using SecuPass.IntegrationTests.Support;
 
@@ -10,6 +13,9 @@ namespace SecuPass.IntegrationTests.Identity;
 // Each test changes the database directly, so the active check and the stamp check are proven separately (A23).
 public sealed class ActiveUserTests(SecuPassApiFactory factory) : IClassFixture<SecuPassApiFactory>
 {
+    // Nothing listens on port 1, so every query fails fast.
+    private const string UnreachableDatabase = "Host=127.0.0.1;Port=1;Database=secupass;Username=secupass;Password=unused;Timeout=1";
+
     [Fact]
     public async Task GetCurrentUser_WithTokenOfInactiveUser_Returns401ProblemDetails()
     {
@@ -53,6 +59,46 @@ public sealed class ActiveUserTests(SecuPassApiFactory factory) : IClassFixture<
         using var response = await caller.Client.GetWithBearerAsync("/health", caller.Tokens.AccessToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // A30: only protected endpoints check the token's user, so a sent token never makes these touch the database.
+    [Theory]
+    [InlineData("/health", HttpStatusCode.OK)]
+    [InlineData("/health/ready", HttpStatusCode.ServiceUnavailable)]
+    [InlineData("/no-such-route", HttpStatusCode.NotFound)]
+    public async Task RequestWithToken_WhileDatabaseUnreachable_SkipsTheUserCheck(string path, HttpStatusCode expectedStatus)
+    {
+        using var caller = await LoggedInUserAsync();
+        using var databaseDownHost = factory.WithWebHostBuilder(builder => builder
+            .UseEnvironment("Production")
+            .ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection([
+                new(SecuPassApiFactory.ConnectionStringKey, UnreachableDatabase),
+            ])));
+        using var client = databaseDownHost.CreateClient();
+
+        using var response = await client.GetWithBearerAsync(path, caller.Tokens.AccessToken);
+
+        Assert.Equal(expectedStatus, response.StatusCode);
+    }
+
+    // A30: login is anonymous, so a stale token left in the header isn't checked (no "no longer counts" warning).
+    [Fact]
+    public async Task Login_WithInactiveUsersTokenInHeader_DoesNotCheckThatToken()
+    {
+        using var staleCaller = await LoggedInUserAsync();
+        await factory.SetActiveInDatabaseAsync(staleCaller.User, isActive: false);
+        var otherUser = await factory.CreateStaffUserAsync(StaffRoles.Staff);
+        var correlationId = Guid.NewGuid().ToString();
+
+        using var response = await staleCaller.Client.PostJsonAsync(
+            IdentityTestExtensions.LoginPath,
+            new { email = otherUser.Email, password = otherUser.Password },
+            correlationId,
+            staleCaller.Tokens.AccessToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.DoesNotContain(factory.LogSink.EventsWithCorrelationId(correlationId), logEvent =>
+            CapturingLogSink.PropertyText(logEvent, "UserId") == staleCaller.User.Id.ToString());
     }
 
     // D9: same response as a wrong password, so login doesn't reveal that the account exists but is inactive.

@@ -138,6 +138,9 @@ Expected depth:
 02:42 · ASSUME · A29 · A deactivate or reactivate that loses a concurrency race is reloaded and applied once more, returning 204. Amends A26.
 02:44 · START · F01.6 · Base commit `5f001f9`. Create user returns 400 for an email over 256 characters or containing whitespace (A27), and 409 when two creates race (review M1, S2, S4).
 02:49 · TASK · F01.6 · Create user now returns 400 for an email over 256 characters or containing whitespace (A27), and 409 when the unique index stops a racing create. 133 tests pass. The 257-character, whitespace and race tests failed before the fix, and mutations of all three fixes turned them red again.
+02:52 · START · F01.7 · Base commit `acc3190`. The active-user check skips anonymous endpoints, so `/health` never touches the database, and a concurrent deactivate or reactivate is retried once after a reload (A29) (review S1, S3).
+02:53 · ASSUME · A30 · The active-user check runs only on endpoints that require a logged-in user, so `/health`, unknown routes and 405s never query the database. Amends A24.
+03:01 · TASK · F01.7 · The active-user check runs only on endpoints that need a logged-in user (A30), so `/health` returns 200 with a token while the database is down. A deactivate or reactivate that hits a concurrency conflict reloads the user and tries once more (A29), so ten at once all return 204 and log the change once. The mutation run showed a retry without the reload passing the race tests, because the unsaved in-memory change looked like the work was done. A test-only EF interceptor now creates the conflict deterministically, and it fails without the reload. 140 tests pass.
 
 ## Summary
 

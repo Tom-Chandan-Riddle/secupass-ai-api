@@ -8,7 +8,8 @@ public static class UserActivationEndpoints
     {
         users.MapPost(
                 "/{userId:guid}/deactivate",
-                (Guid userId, ClaimsPrincipal actor, UserActivationHandler handler) => handler.DeactivateAsync(userId, actor))
+                (Guid userId, ClaimsPrincipal actor, UserActivationHandler handler, CancellationToken cancellationToken) =>
+                    handler.DeactivateAsync(userId, actor, cancellationToken))
             .WithName("DeactivateUser")
             .WithSummary("Deactivate a user, so their tokens stop working on the next request and they can't log in")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -18,7 +19,8 @@ public static class UserActivationEndpoints
 
         users.MapPost(
                 "/{userId:guid}/reactivate",
-                (Guid userId, ClaimsPrincipal actor, UserActivationHandler handler) => handler.ReactivateAsync(userId, actor))
+                (Guid userId, ClaimsPrincipal actor, UserActivationHandler handler, CancellationToken cancellationToken) =>
+                    handler.ReactivateAsync(userId, actor, cancellationToken))
             .WithName("ReactivateUser")
             .WithSummary("Reactivate a user, so they can log in again")
             .ProducesProblem(StatusCodes.Status401Unauthorized)

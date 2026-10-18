@@ -1,5 +1,6 @@
 using System.Security.Claims;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -13,7 +14,7 @@ public sealed partial class ActiveUserMiddleware(RequestDelegate next, ILogger<A
 {
     public async Task InvokeAsync(HttpContext context, SecuPassDbContext dbContext, IOptions<IdentityOptions> identityOptions)
     {
-        if (context.User.Identity?.IsAuthenticated == true)
+        if (context.User.Identity?.IsAuthenticated == true && RequiresLoggedInUser(context.GetEndpoint()))
         {
             await DropStaleTokenAsync(context, dbContext, identityOptions.Value.ClaimsIdentity);
         }
@@ -47,6 +48,11 @@ public sealed partial class ActiveUserMiddleware(RequestDelegate next, ILogger<A
         // A24: the request carries on as anonymous, so protected endpoints answer 401 and anonymous ones still work.
         context.User = new ClaimsPrincipal(new ClaimsIdentity());
     }
+
+    // A30: anonymous endpoints, unknown routes and wrong methods never query the user, so /health never touches the database.
+    private static bool RequiresLoggedInUser(Endpoint? endpoint) =>
+        endpoint?.Metadata.GetMetadata<IAuthorizeData>() is not null
+        && endpoint.Metadata.GetMetadata<IAllowAnonymous>() is null;
 
     // This API issues and protects its tokens, so a missing claim is a bug, not bad input.
     private static string RequiredClaim(ClaimsPrincipal user, string claimType) =>
