@@ -66,6 +66,7 @@ Only assumptions I approved. Code that depends on one cites its ID.
 | A28 | Login takes about as long for an unknown email, an inactive user or a locked-out account as for a wrong password, so timing doesn't reveal which accounts exist. Amends A16. | A probe showed about 1 ms against 48 ms, which revealed which emails exist despite the matching 401. | Chandan, 02:42 (F01 review S5). Locked-out accounts added at 03:10, F01.8 build. |
 | A29 | When a deactivate or reactivate loses a concurrency race, the user is reloaded and the request applied once more, returning 204 as A26 does. A second conflict throws. Amends A26. | Retries sent at the same moment are then as safe as retries sent one after another. | Chandan, 02:42 (F01 review S3) |
 | A30 | The active-user check (A23) runs only on endpoints that require a logged-in user. Anonymous endpoints, unknown routes and wrong methods never query the user, whatever token is sent. Amends A24. | `/health` must never touch the database (F00), and a token sent to an endpoint that needs none changes nothing there. | Chandan, 02:53 (F01 review S1) |
+| A31 | Deactivating an Admin is refused with 422 when no other active Admin would remain, so two Admins deactivating each other at once leave one active. | With A25 a single request can't remove the last Admin, but two simultaneous ones could. 422 matches A25 and A10. | Chandan, 03:31 (F01 review N2) |
 
 A4 (volunteer PWA) is frontend only and doesn't apply to this API.
 
@@ -85,6 +86,7 @@ The brief's D1 to D4 apply as written: the append-only check-in log, a personal 
 | D12 | EF Core logs at Warning and above. SQL commands are not logged at Information in any environment. | Keep EF command logs at Information, which is the CLAUDE.md default of logging every dependency call with its duration. | Chandan's call at the F00 review (N4). Overrides the CLAUDE.md dependency-logging default for database calls. Failed commands still log at Error. |
 | D13 | Login and refresh are our own endpoints, `POST /auth/login` and `POST /auth/refresh`, which call `SignInManager` with Identity's bearer token scheme. `MapIdentityApi` isn't used. Amends D9. | `MapIdentityApi` with a filter that returns 404 for `/register`, or login only with no refresh. | A probe showed `MapIdentityApi` has no options and always maps `/register` and eight other endpoints, which would leave untested and undocumented endpoints exposed. The tokens are the same ones it would issue. |
 | D14 | Endpoints are closed by default: every feature maps onto a root route group with `RequireAuthorization()`, and anonymous endpoints say `AllowAnonymous`. A test fails if any mapped endpoint declares neither. | A fallback authorization policy, either as it is or with an exemption for requests that match no endpoint. | The fallback policy also applies when no endpoint matches and to the framework's 405 endpoint, so anonymous 404s and 405s became 401s, against A13 (seen in F01.1). An exemption for unmatched routes still leaves the 405. The test gives back the safety the fallback policy gave. Chandan, 01:16. |
+| D15 | Deactivations run one at a time under a Postgres advisory transaction lock (`pg_advisory_xact_lock`), taken before the target and the Admin count are read. | A SERIALIZABLE transaction with a retry on serialization failure. | The lock is released at commit or rollback, needs no retry path, and makes the A31 check see every deactivation that committed before it. Deactivation is rare, so serialising it costs nothing that matters. Chandan, 03:31. |
 
 ## Features
 
@@ -143,7 +145,7 @@ Tasks:
 - [x] F01.7 fix: the active-user check skips anonymous endpoints, so `/health` never touches the database, and a concurrent deactivate or reactivate is retried once after a reload (A29) (review S1, S3).
 - [x] F01.8 fix: login checks a dummy password hash for unknown, inactive and locked-out accounts, so timing doesn't reveal accounts (A28) (review S5).
 - [x] F01.9 fix: tests for the lockout ending, the token lifetime boundaries, refresh while locked out, and the correlation ID on every new error status (review S6, N1, N3, N4).
-- [ ] F01.10 fix: refuse to deactivate the last active Admin, also when two Admins deactivate each other at once (review N2). The assumption is agreed at its approach gate.
+- [x] F01.10 fix: refuse to deactivate the last active Admin, also when two Admins deactivate each other at once (A31, D15, review N2).
 
 Review notes kept, not tasks: an authorization policy that names its own scheme, such as F09's volunteer auth, may re-authenticate and skip the active-user check, so the check must cover that scheme too (N5, unverified). The login, refresh and activation handlers take no `CancellationToken`, because Identity's `UserManager` and `SignInManager` calls accept none (N6).
 

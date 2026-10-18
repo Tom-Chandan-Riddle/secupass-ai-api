@@ -120,6 +120,7 @@ Content-Type: application/json
 }
 
 ### Admin deactivates a user: 204. Their tokens stop working on the next request and login fails (D9, A23)
+# 422 for your own account (A25), or for the last active Admin (A31)
 # Replace the ID with a userId from the create request above.
 @userId = 00000000-0000-0000-0000-000000000000
 POST {{baseUrl}}/users/{{userId}}/deactivate

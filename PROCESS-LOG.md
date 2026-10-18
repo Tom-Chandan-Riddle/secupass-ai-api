@@ -146,6 +146,10 @@ Expected depth:
 03:14 · TASK · F01.8 · Login runs a check against a dummy hash, built with the app's hasher options, for unknown, inactive and locked-out accounts, so those 401s take about as long as a wrong password (A28). Locked-out accounts are now caught before Identity's sign-in, which skipped the password check. 143 tests pass, also with two runs side by side. The three timing tests failed at about 1.5 ms against 50 ms before the change, and four mutations turned them red again.
 03:17 · START · F01.9 · Base commit `acd000b`. Tests for the lockout ending, the token lifetime boundaries, refresh while locked out, and the correlation ID on every new error status (review S6, N1, N3, N4).
 03:24 · TASK · F01.9 · Tests only: the five-minute lockout and its end, refresh while locked out (pinned as intended), both sides of the 1-hour and 14-day token lifetimes, and the correlation ID on all eight Identity error statuses. The fake-clock tests confirmed the bearer handler validates expiry against the injected TimeProvider. 157 tests pass, and seven mutations turned each new test red.
+03:31 · START · F01.10 · Base commit `7d3b9ea`. Refuse to deactivate the last active Admin, also when two Admins deactivate each other at once (review N2).
+03:31 · ASSUME · A31 · Deactivating an Admin is refused with 422 when no other active Admin would remain, so mutual deactivation leaves one Admin.
+03:31 · DECISION · D15 · Deactivations are serialised with a Postgres advisory transaction lock, not a SERIALIZABLE transaction, because it needs no retry path and the lock ends with the transaction.
+03:38 · TASK · F01.10 · Deactivation takes a Postgres advisory transaction lock before reading the target, and refuses with 422 when the target is the last active Admin (A31, D15). The first race test still failed after the fix, because the shared test database holds Admins from other tests, so A31 rightly allowed both deactivations. The test now gives each round its own database with exactly two Admins. Without the lock every round lost both. 159 tests pass, also with two runs side by side.
 
 ## Summary
 

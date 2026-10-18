@@ -1,6 +1,7 @@
 using System.Net;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -82,6 +83,54 @@ public sealed class UserActivationTests(SecuPassApiFactory factory) : IClassFixt
 
         await response.ReadProblemAsync(HttpStatusCode.UnprocessableEntity);
         Assert.True(await IsActiveAsync(admin.User));
+    }
+
+    // A31: one request can't remove the last Admin, because the caller is an Admin who stays (A25).
+    [Fact]
+    public async Task Deactivate_AnotherAdmin_Returns204()
+    {
+        using var admin = await LoggedInClientAsync(StaffRoles.Admin);
+        var otherAdmin = await factory.CreateStaffUserAsync(StaffRoles.Admin);
+
+        using var response = await admin.Client.PostJsonAsync(ActionPath(otherAdmin.Id, Deactivate), new { }, accessToken: admin.Tokens.AccessToken);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.False(await IsActiveAsync(otherAdmin));
+    }
+
+    // A31 and D15: when two Admins are the only ones, deactivating each other at the same moment leaves one active.
+    // Each round uses its own database, because the shared one holds Admins from other tests. The loser gets 422,
+    // or 401 when its own token was already dropped because its user had just been deactivated.
+    [Fact]
+    public async Task Deactivate_OnlyTwoAdminsDeactivatingEachOtherAtOnce_LeavesOneActive()
+    {
+        const int rounds = 5;
+        HttpStatusCode[] allowedStatuses = [HttpStatusCode.NoContent, HttpStatusCode.UnprocessableEntity, HttpStatusCode.Unauthorized];
+        for (var round = 0; round < rounds; round++)
+        {
+            using var isolatedHost = factory.WithFreshDatabase();
+            var first = await isolatedHost.CreateStaffUserAsync(StaffRoles.Admin);
+            var second = await isolatedHost.CreateStaffUserAsync(StaffRoles.Admin);
+            using var firstClient = isolatedHost.CreateClient();
+            using var secondClient = isolatedHost.CreateClient();
+            var firstToken = (await firstClient.LoginAsync(first)).AccessToken;
+            var secondToken = (await secondClient.LoginAsync(second)).AccessToken;
+
+            var responses = await Task.WhenAll(
+                firstClient.PostJsonAsync(ActionPath(second.Id, Deactivate), new { }, accessToken: firstToken),
+                secondClient.PostJsonAsync(ActionPath(first.Id, Deactivate), new { }, accessToken: secondToken));
+
+            var statuses = responses.Select(response => response.StatusCode).ToList();
+            foreach (var response in responses)
+            {
+                response.Dispose();
+            }
+
+            Assert.All(statuses, status => Assert.Contains(status, allowedStatuses));
+            Assert.True(
+                await IsActiveAsync(isolatedHost, first) || await IsActiveAsync(isolatedHost, second),
+                $"Round {round}: both Admins were deactivated ({string.Join(", ", statuses)}).");
+        }
     }
 
     // D9 and A23: the target's existing tokens stop working on their next request, and login fails.
@@ -236,13 +285,18 @@ public sealed class UserActivationTests(SecuPassApiFactory factory) : IClassFixt
         return new LoggedInUser(user, client, tokens);
     }
 
-    private async Task<bool> IsActiveAsync(TestStaffUser testUser) => (await FindUserAsync(testUser)).IsActive;
+    private Task<bool> IsActiveAsync(TestStaffUser testUser) => IsActiveAsync(factory, testUser);
+
+    private static async Task<bool> IsActiveAsync(WebApplicationFactory<Program> host, TestStaffUser testUser) =>
+        (await FindUserAsync(host, testUser)).IsActive;
 
     private async Task<string?> SecurityStampAsync(TestStaffUser testUser) => (await FindUserAsync(testUser)).SecurityStamp;
 
-    private async Task<StaffUser> FindUserAsync(TestStaffUser testUser)
+    private Task<StaffUser> FindUserAsync(TestStaffUser testUser) => FindUserAsync(factory, testUser);
+
+    private static async Task<StaffUser> FindUserAsync(WebApplicationFactory<Program> host, TestStaffUser testUser)
     {
-        await using var scope = factory.Services.CreateAsyncScope();
+        await using var scope = host.Services.CreateAsyncScope();
         var user = await scope.ServiceProvider.GetRequiredService<UserManager<StaffUser>>().FindByIdAsync(testUser.Id.ToString());
         return user ?? throw new InvalidOperationException("Test user not found.");
     }

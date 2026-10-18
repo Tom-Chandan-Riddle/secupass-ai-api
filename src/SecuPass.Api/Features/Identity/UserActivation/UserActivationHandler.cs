@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 
+using SecuPass.Domain.Identity;
 using SecuPass.Infrastructure.Identity;
 using SecuPass.Infrastructure.Persistence;
 
@@ -16,6 +17,7 @@ public sealed partial class UserActivationHandler(
 {
     private const string UserNotFoundTitle = "User not found";
     private const string OwnAccountTitle = "You can't deactivate your own account";
+    private const string LastActiveAdminTitle = "Deactivating this Admin would leave no active Admin";
 
     // A29: the first attempt plus one retry after a concurrency conflict.
     private const int MaxSaveAttempts = 2;
@@ -31,9 +33,25 @@ public sealed partial class UserActivationHandler(
             return TypedResults.Problem(title: OwnAccountTitle, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
+        // D15: deactivations run one at a time, so the A31 check below sees every deactivation committed before it.
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await dbContext.LockDeactivationsAsync(cancellationToken);
         if (await userManager.FindByIdAsync(userId.ToString()) is not { } user)
         {
             return UserNotFound(userId, actorId);
+        }
+
+        // A26: already inactive, so there is nothing to change and no Admin is lost.
+        if (!user.IsActive)
+        {
+            return TypedResults.NoContent();
+        }
+
+        // A31: two Admins deactivating each other at once must leave one of them active.
+        if (await IsLastActiveAdminAsync(user, cancellationToken))
+        {
+            LogActivationRejected(logger, ActivationRejection.LastActiveAdmin, userId, actorId);
+            return TypedResults.Problem(title: LastActiveAdminTitle, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         if (await ChangeActivationAsync(user, makeActive: false, cancellationToken))
@@ -41,6 +59,7 @@ public sealed partial class UserActivationHandler(
             LogUserDeactivated(logger, userId, actorId);
         }
 
+        await transaction.CommitAsync(cancellationToken);
         return TypedResults.NoContent();
     }
 
@@ -102,6 +121,10 @@ public sealed partial class UserActivationHandler(
         return userManager.UpdateAsync(user);
     }
 
+    private async Task<bool> IsLastActiveAdminAsync(StaffUser user, CancellationToken cancellationToken) =>
+        await userManager.IsInRoleAsync(user, StaffRoles.Admin)
+        && !await dbContext.HasOtherActiveAdminAsync(user.Id, cancellationToken);
+
     private static bool IsConcurrencyFailure(IdentityResult result) =>
         result.Errors.Any(error => error.Code == nameof(IdentityErrorDescriber.ConcurrencyFailure));
 
@@ -131,5 +154,6 @@ public sealed partial class UserActivationHandler(
     {
         UserNotFound,
         OwnAccount,
+        LastActiveAdmin,
     }
 }
