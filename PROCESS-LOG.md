@@ -123,6 +123,11 @@ Expected depth:
 01:55 · ASSUME · A21 · A created user returns 201 with its ID, email and role and no Location header, because no endpoint gets a user by ID yet.
 02:01 · ASSUME · A22 · Any well-formed email can be a user's email. Identity's user-name character list is cleared, because it rejected valid addresses with characters such as an apostrophe.
 02:05 · TASK · F01.3 · `POST /users` lets an Admin create an Admin or Staff user in one transaction, with 400 for bad input, unsupported roles and weak passwords, 403 for other roles, and 409 for a taken email (A20 to A22). 101 tests pass. All 20 new tests failed before the endpoint existed, and 9 mutations turned the specific ones red.
+02:09 · START · F01.4 · Base commit `a210636`. Deactivate and reactivate, and the active-flag check on every authenticated request, on login and on refresh.
+02:10 · PLAN · F01 · F01.4 was about 40 minutes of work, so the active flag and its checks stay in F01.4 and the deactivate and reactivate endpoints move to F01.5.
+02:10 · ASSUME · A23 · Every authenticated request checks the user exists, is active and still has the token's security stamp, so old tokens never come back after reactivation.
+02:10 · ASSUME · A24 · A token that no longer counts is treated as no token: protected endpoints return 401 and anonymous ones still work.
+02:16 · TASK · F01.4 · Staff users have an active flag that defaults to true for existing rows. A middleware drops the token of a missing, inactive or re-stamped user so the request runs as anonymous (A23, A24), and login and refresh refuse inactive users. 110 tests pass. 7 of the 9 new tests failed first, and 9 mutations proved all of them.
 
 ## Summary
 

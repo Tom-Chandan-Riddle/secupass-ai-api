@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
+using SecuPass.Api.Features.Identity.ActiveUser;
 using SecuPass.Api.Features.Identity.CreateUser;
 using SecuPass.Api.Features.Identity.CurrentUser;
 using SecuPass.Api.Features.Identity.DevelopmentAdmin;
@@ -44,6 +45,10 @@ public static class IdentityFeature
         await using var scope = services.CreateAsyncScope();
         await scope.ServiceProvider.GetRequiredService<DevelopmentAdminSeeder>().SeedAsync(cancellationToken);
     }
+
+    // A23: runs after authentication, so it sees the token's user before authorization does.
+    public static IApplicationBuilder UseActiveUserCheck(this IApplicationBuilder app) =>
+        app.UseMiddleware<ActiveUserMiddleware>();
 
     // D13: our own endpoints instead of MapIdentityApi, which would also map /register.
     public static IEndpointRouteBuilder MapIdentityEndpoints(this IEndpointRouteBuilder endpoints)

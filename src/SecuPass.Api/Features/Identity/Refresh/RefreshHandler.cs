@@ -36,6 +36,12 @@ public sealed partial class RefreshHandler(
             return Rejected(RefreshRejection.StaleSecurityStamp);
         }
 
+        // D9: an inactive user's refresh token no longer works.
+        if (!user.IsActive)
+        {
+            return Rejected(RefreshRejection.Inactive);
+        }
+
         var principal = await signInManager.CreateUserPrincipalAsync(user);
         LogTokenRefreshed(logger, user.Id);
         return TypedResults.SignIn(principal, authenticationScheme: IdentityConstants.BearerScheme);
@@ -58,5 +64,6 @@ public sealed partial class RefreshHandler(
         Unreadable,
         Expired,
         StaleSecurityStamp,
+        Inactive,
     }
 }

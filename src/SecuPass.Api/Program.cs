@@ -24,6 +24,7 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseRequestLogging();
 app.UseErrorHandling();
 app.UseAuthentication();
+app.UseActiveUserCheck();
 app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())

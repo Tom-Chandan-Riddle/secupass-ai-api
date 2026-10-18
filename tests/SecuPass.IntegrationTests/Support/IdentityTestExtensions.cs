@@ -3,9 +3,11 @@ using System.Net.Http.Json;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using SecuPass.Infrastructure.Identity;
+using SecuPass.Infrastructure.Persistence;
 
 namespace SecuPass.IntegrationTests.Support;
 
@@ -43,6 +45,23 @@ public static class IdentityTestExtensions
             ?? throw new InvalidOperationException("Test user not found.");
 
         ThrowIfFailed(await userManager.UpdateSecurityStampAsync(user));
+    }
+
+    // Changes only the flag, not the security stamp, so the active check is tested on its own.
+    public static async Task SetActiveInDatabaseAsync(this WebApplicationFactory<Program> factory, TestStaffUser testUser, bool isActive)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<SecuPassDbContext>();
+        await dbContext.Users
+            .Where(user => user.Id == testUser.Id)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(user => user.IsActive, isActive), TestContext.Current.CancellationToken);
+    }
+
+    public static async Task DeleteUserInDatabaseAsync(this WebApplicationFactory<Program> factory, TestStaffUser testUser)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<SecuPassDbContext>();
+        await dbContext.Users.Where(user => user.Id == testUser.Id).ExecuteDeleteAsync(TestContext.Current.CancellationToken);
     }
 
     public static Task<HttpResponseMessage> PostLoginAsync(

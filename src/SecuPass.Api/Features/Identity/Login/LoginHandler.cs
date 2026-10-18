@@ -18,6 +18,12 @@ public sealed partial class LoginHandler(SignInManager<StaffUser> signInManager,
             return Rejected(LoginRejection.UnknownEmail, userId: null);
         }
 
+        // D9: an inactive user can't log in, even with the right password.
+        if (!user.IsActive)
+        {
+            return Rejected(LoginRejection.Inactive, user.Id);
+        }
+
         signInManager.AuthenticationScheme = IdentityConstants.BearerScheme;
         // A16: failed attempts count towards lockout.
         var result = await signInManager.PasswordSignInAsync(user, request.Password, isPersistent: false, lockoutOnFailure: true);
@@ -54,6 +60,7 @@ public sealed partial class LoginHandler(SignInManager<StaffUser> signInManager,
     private enum LoginRejection
     {
         UnknownEmail,
+        Inactive,
         WrongPassword,
         LockedOut,
         NotAllowed,
