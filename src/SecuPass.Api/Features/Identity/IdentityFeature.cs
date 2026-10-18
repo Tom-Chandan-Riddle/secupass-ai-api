@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 
 using SecuPass.Api.Features.Identity.CurrentUser;
+using SecuPass.Api.Features.Identity.DevelopmentAdmin;
 using SecuPass.Api.Features.Identity.Login;
 using SecuPass.Api.Features.Identity.Refresh;
 using SecuPass.Infrastructure.Identity;
@@ -23,9 +24,21 @@ public static class IdentityFeature
             .AddEntityFrameworkStores<SecuPassDbContext>()
             .AddSignInManager();
 
+        services.AddOptions<DevelopmentAdminOptions>()
+            .BindConfiguration(DevelopmentAdminOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddScoped<LoginHandler>();
         services.AddScoped<RefreshHandler>();
+        services.AddScoped<DevelopmentAdminSeeder>();
         return services;
+    }
+
+    public static async Task SeedDevelopmentAdminAsync(this IServiceProvider services, CancellationToken cancellationToken)
+    {
+        await using var scope = services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<DevelopmentAdminSeeder>().SeedAsync(cancellationToken);
     }
 
     // D13: our own endpoints instead of MapIdentityApi, which would also map /register.

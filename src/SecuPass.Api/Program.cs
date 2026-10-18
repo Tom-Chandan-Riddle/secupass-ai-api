@@ -30,6 +30,7 @@ if (app.Environment.IsDevelopment())
 {
     // Outside Development, migrations are applied as a deployment step.
     await app.Services.MigrateDatabaseAsync(app.Lifetime.ApplicationStopping);
+    await app.Services.SeedDevelopmentAdminAsync(app.Lifetime.ApplicationStopping);
     app.MapOpenApi().AllowAnonymous();
     app.MapScalarApiReference().AllowAnonymous();
 }

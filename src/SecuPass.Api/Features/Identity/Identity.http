@@ -1,7 +1,7 @@
 @baseUrl = http://localhost:5135
-# No user exists until the Development Admin seed (F01.2). Until then, set these to a user you created.
-@email = staff@example.com
-@password = Your-Passw0rd!
+# A17: the Admin seeded in Development from appsettings.Development.json.
+@email = admin@secupass.local
+@password = Dev-Admin-Passw0rd!
 
 ### Log in: 200 with tokenType, accessToken, expiresIn (3600) and refreshToken
 # @name login

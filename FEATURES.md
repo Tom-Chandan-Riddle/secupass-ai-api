@@ -52,6 +52,9 @@ Only assumptions I approved. Code that depends on one cites its ID.
 | A14 | ProblemDetails error bodies are written whatever the request's `Accept` header says. Amends A13. | Without it, `Accept: text/plain` gets a plain-text 404 and an empty 500, so clients would see more than one error shape. | Chandan, 23:43 (F00 review N3) |
 | A15 | A malformed request (`BadHttpRequestException`, such as unreadable JSON or a body over the size limit) returns ProblemDetails with the exception's status and its standard title, with no `detail`. The framework's message goes only to the Warning log. | The response is the same in every environment, and parameter or type names don't leak. Field-level errors come from validation. | Chandan, 00:14 |
 | A16 | Identity's defaults apply. A password needs at least 6 characters with an upper-case letter, a lower-case letter, a digit and a symbol. Five failed logins lock the account for five minutes, and a locked account gets the same 401 as a wrong password. Access tokens last 1 hour and refresh tokens 14 days. | They are standard and need no configuration. Lockout slows password guessing, and the matching 401 doesn't reveal that an account exists. | Chandan, 01:01 |
+| A17 | The Development Admin's email and password (`admin@secupass.local`, `Dev-Admin-Passw0rd!`) are committed in `appsettings.Development.json`, like the dev database password. They are for local use only. | A fresh clone runs on the first try, with no user-secrets setup. | Chandan, 01:26 |
+| A18 | If a user with the configured email already exists, the seed leaves it unchanged: no password reset and no role change. | Changes made through the API survive restarts. | Chandan, 01:26 |
+| A19 | If the seed can't create the Admin, for example because the configured password breaks A16's rules, startup fails with Identity's reasons. | A misconfigured dev environment shows up at once, not as a missing login later. It only runs in Development. | Chandan, 01:26 |
 
 A4 (volunteer PWA) is frontend only and doesn't apply to this API.
 
@@ -116,12 +119,12 @@ Acceptance criteria:
 - [ ] Staff and Client Viewers calling user management get 403.
 - [ ] An Admin can deactivate and reactivate a user. After deactivation, that user's existing token gets 401 on the next request, and login fails. After reactivation, login works again (D9).
 - [ ] Deactivating an unknown user returns 404.
-- [ ] In Development, an Admin is seeded from validated options. No user is seeded in tests.
+- [x] In Development, an Admin is seeded from validated options. No user is seeded in tests.
 - [ ] The Volunteer role isn't part of this feature. It comes with the brief's F09.
 
 Tasks:
 - [x] F01.1 Identity with bearer login and refresh (D13), lockout (A16), the Admin, Staff and Client Viewer roles, `GET /auth/me`, no `/register`, and 401 for anonymous calls. Also rewrite `GetHealth_WithoutAuthorizationHeader_Returns200` so it proves `/health` stays anonymous, and add a 405 ProblemDetails test for the first method-specific endpoint (F00 review N1, A13).
-- [ ] F01.2 The Development Admin seed from validated options, turned off in tests.
+- [x] F01.2 The Development Admin seed from validated options, turned off in tests.
 - [ ] F01.3 Admin user management (create, deactivate, reactivate) and the active-flag check on every authenticated request.
 
 ### F02 Clients

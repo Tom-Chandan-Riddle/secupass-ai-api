@@ -112,6 +112,11 @@ Expected depth:
 01:16 · NOTE · F01.1 · With the first migration that creates tables, test hosts migrating the shared database in parallel failed with 42P07, so EF Core with Npgsql 10.0.3 doesn't serialise concurrent migrations. The F00 comment that said it did is corrected, and the test fixture now migrates the shared database once before any host starts.
 01:16 · DECISION · D14 · Endpoints are closed by an authenticated root route group plus a test that every endpoint declares `[Authorize]` or `[AllowAnonymous]`. The planned fallback policy turned 10 F00 tests' anonymous 404s and 405s into 401s.
 01:20 · TASK · F01.1 · Bearer login and refresh over Identity (D13) with lockout (A16), `GET /auth/me`, the three roles seeded by migration, no `/register`, and endpoints closed by the authenticated route group (D14). 67 tests pass. 15 mutations of the new code each turned their tests red, and the other new tests failed before the endpoints existed.
+01:24 · START · F01.2 · Base commit `196c474`. The Development Admin seed from validated options, turned off in tests.
+01:26 · ASSUME · A17 · The Development Admin's credentials are committed in `appsettings.Development.json`, so a fresh clone runs without user-secrets setup.
+01:26 · ASSUME · A18 · An existing user with the configured email is left unchanged by the seed, so API changes survive restarts.
+01:26 · ASSUME · A19 · A seed that can't create the Admin fails startup with Identity's reasons, so a broken dev setup shows at once.
+01:32 · TASK · F01.2 · In Development the Admin from `appsettings.Development.json` is seeded after migrations, in one transaction, and an existing user is left unchanged (A17, A18). A seed that can't create the Admin stops startup (A19), and the test factory turns the seed off. 81 tests pass. 9 new tests failed against a do-nothing seeder, and 7 mutations turned the rest red.
 
 ## Summary
 
