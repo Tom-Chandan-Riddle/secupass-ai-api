@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SecuPass.Api/SecuPass.Api.csproj" />
+    <Project Path="src/SecuPass.Domain/SecuPass.Domain.csproj" />
+    <Project Path="src/SecuPass.Infrastructure/SecuPass.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SecuPass.IntegrationTests/SecuPass.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

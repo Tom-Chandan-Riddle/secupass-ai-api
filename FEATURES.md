@@ -47,6 +47,10 @@ Only assumptions I approved. Code that depends on one cites its ID.
 | A9 | A Client Viewer who requests another client's record by ID gets 404, not 403. | A 403 would confirm the record exists, which lets a viewer probe other clients' IDs. | Chandan, 17:30 |
 | A10 | Changing an archived client, or anything under it, returns 422 with ProblemDetails. | The request is well formed but breaks a business rule. Closed events are treated the same way. | Chandan, 17:30 |
 | A11 | The client logo is left out of F02. | Image upload and storage is its own feature, and nothing in Must uses it. | Chandan, 17:30 |
+| A12 | An incoming `X-Correlation-ID` is used only if it is 1 to 64 characters of letters, digits, `-`, `_`, `.` and `:`. Otherwise the API generates a new ID, returns that one, and logs a Warning. The request still proceeds. | The value is logged and echoed, so an unchecked one allows log and header injection. A tracing header should never fail a request. | Chandan, 22:05 |
+| A13 | Error responses without a body, such as an unmatched route (404) or a wrong method (405), are returned as ProblemDetails with the correlation ID. | Clients then handle one error shape for every failure. | Chandan, 22:05 |
+| A14 | ProblemDetails error bodies are written whatever the request's `Accept` header says. Amends A13. | Without it, `Accept: text/plain` gets a plain-text 404 and an empty 500, so clients would see more than one error shape. | Chandan, 23:43 (F00 review N3) |
+| A15 | A malformed request (`BadHttpRequestException`, such as unreadable JSON or a body over the size limit) returns ProblemDetails with the exception's status and its standard title, with no `detail`. The framework's message goes only to the Warning log. | The response is the same in every environment, and parameter or type names don't leak. Field-level errors come from validation. | Chandan, 00:14 |
 
 A4 (volunteer PWA) is frontend only and doesn't apply to this API.
 
@@ -62,27 +66,36 @@ The brief's D1 to D4 apply as written: the append-only check-in log, a personal 
 | D8 | Serilog with JSON console output. | Built-in `ILogger` console logging. | The brief names Serilog. Code still logs through `ILogger<T>`. |
 | D9 | ASP.NET Core Identity with `MapIdentityApi` bearer tokens and roles as claims. Every authenticated request checks the user's active flag. | A development-only header auth scheme, or a hand-rolled JWT. | The architecture assumes Identity. The per-request check locks out a deactivated user immediately, which meets the brief's one-minute rule. |
 | D10 | No HTTP resilience handler for now. | The standard resilience handler on every `HttpClient`. | There are no outbound HTTP calls while D7's stand-ins are in place. |
+| D11 | Local development and Testcontainers both use `postgres:17-alpine`. A `compose.yaml` runs the local database. | A `docker run` line in the README, or bringing your own Postgres. Postgres 16 or 18. | One command gives a database matching the test engine. Postgres 17 is a mature major version that RDS supports. |
+| D12 | EF Core logs at Warning and above. SQL commands are not logged at Information in any environment. | Keep EF command logs at Information, which is the CLAUDE.md default of logging every dependency call with its duration. | Chandan's call at the F00 review (N4). Overrides the CLAUDE.md dependency-logging default for database calls. Failed commands still log at Error. |
 
 ## Features
 
 Budget: 2 hours. Must comes to 80 minutes, which is 20 over half; Chandan approved this at 17:30. A checkpoint after F01 decides whether F02 stays in Must. Stretch features are built in the order listed, only if time remains.
 
 ### F00 Foundation
-Priority: Must · Status: Todo · Branch: feature/F00-foundation · Estimate: 25 min
+Priority: Must · Status: Done · Branch: feature/F00-foundation · Estimate: 25 min
+
+Approach: `SecuPass.slnx` with `src/SecuPass.Api`, `src/SecuPass.Domain` and `src/SecuPass.Infrastructure` on net10.0. Api references Infrastructure and Domain, Infrastructure references Domain, and Domain references nothing. `Directory.Build.props` sets nullable, `TreatWarningsAsErrors` and `LangVersion` 14 for every project. Cross-cutting code lives in `SecuPass.Api/Infrastructure/` (correlation ID middleware, `GlobalExceptionHandler`, health check registration), and `Program.cs` stays a short list of `Add…`/`Map…` calls. `SecuPass.Infrastructure` holds `SecuPassDbContext` (Npgsql) and its migrations. Tests: xUnit v3 with `Assert`. `tests/SecuPass.IntegrationTests` drives the app through `WebApplicationFactory<Program>`, and from F00.3 against a Testcontainers Postgres fixture. Risk: Testcontainers needs Docker running, so integration tests fail without it. Docker 29.8.2 is now installed, which the setup table doesn't yet reflect.
 
 Acceptance criteria:
-- [ ] The solution builds with no warnings under `TreatWarningsAsErrors`. `bin/` and `obj/` are git-ignored.
-- [ ] `GET /health` returns 200 without touching the database. An HTTP integration test proves it.
-- [ ] `GET /health/ready` returns 200 when Postgres is reachable and 503 when it isn't.
-- [ ] An unhandled exception returns 500 ProblemDetails with the correlation ID and no stack trace or internals, and is logged once at Error.
-- [ ] Every response carries `X-Correlation-ID`. An incoming value is echoed back, otherwise one is generated.
-- [ ] Every request is logged as JSON with method, path, status, duration and correlation ID.
-- [ ] OpenAPI and Scalar are served in Development only.
+- [x] The solution builds with no warnings under `TreatWarningsAsErrors`. `bin/` and `obj/` are git-ignored.
+- [x] `GET /health` returns 200 without touching the database. An HTTP integration test proves it.
+- [x] `GET /health/ready` returns 200 when Postgres is reachable and 503 when it isn't.
+- [x] An unhandled exception returns 500 ProblemDetails with the correlation ID and no stack trace or internals, and is logged once at Error.
+- [x] Every response carries `X-Correlation-ID`. An incoming value is echoed back, otherwise one is generated.
+- [x] Every request is logged as JSON with method, path, status, duration and correlation ID. (Tests check the logged properties through a capturing sink. The JSON console format was checked by running the app, because the test host doesn't expose console output.)
+- [x] OpenAPI and Scalar are served in Development only.
 
 Tasks:
-- [ ] F00.1 Solution, Api, Domain and Infrastructure projects, `.gitignore`, `Directory.Build.props`, `.editorconfig`, unit and integration test projects, and `/health` with a passing HTTP test.
-- [ ] F00.2 Correlation ID middleware, Serilog JSON request logging, global `IExceptionHandler` with ProblemDetails, OpenAPI with Scalar.
-- [ ] F00.3 Npgsql `DbContext` with migrations auto-applied in Development, a Testcontainers Postgres fixture for integration tests, and `/health/ready`.
+- [x] F00.1 Solution, Api, Domain and Infrastructure projects, `.gitignore`, `Directory.Build.props`, `.editorconfig`, the integration test project, and `/health` with a passing HTTP test. `SecuPass.UnitTests` is added with the first domain logic, because an empty test project fails `dotnet test`.
+- [x] F00.2 Correlation ID middleware, Serilog JSON request logging, global `IExceptionHandler` with ProblemDetails, OpenAPI with Scalar.
+- [x] F00.3 Npgsql `DbContext` with migrations auto-applied in Development, a Testcontainers Postgres fixture for integration tests, and `/health/ready`.
+- [x] F00.4 fix: replace the flaky startup options test with a direct `IStartupValidator` test, and add the whitespace connection string, repeated `X-Correlation-ID` and Staging cases (review M1, N6).
+- [x] F00.5 fix: `BadHttpRequestException` returns its own 4xx ProblemDetails logged at Warning, an exception after the response started is logged at Error with the correlation ID (S2: no code change, because ASP.NET Core already does this, and a test now pins it), and ProblemDetails is written whatever the `Accept` header (review S1, S2, N3, A14).
+- [x] F00.6 fix: the migration log names only migrations actually applied and is skipped when none were, and EF Core logs at Warning (review N2, D12).
+
+Wrap-up note: the README says production connection strings must set `Timeout`, so `/health/ready` fails fast instead of waiting for Npgsql's 15-second default (review N5).
 
 ### F01 Staff authentication and roles
 Priority: Must · Status: Todo · Branch: feature/F01-staff-auth · Estimate: 30 min
@@ -99,7 +112,7 @@ Acceptance criteria:
 - [ ] The Volunteer role isn't part of this feature. It comes with the brief's F09.
 
 Tasks:
-- [ ] F01.1 Identity with bearer login, the Admin, Staff and Client Viewer roles, `/register` not mapped, 401 for anonymous calls, and the Development Admin seed.
+- [ ] F01.1 Identity with bearer login, the Admin, Staff and Client Viewer roles, `/register` not mapped, 401 for anonymous calls, and the Development Admin seed. Also rewrite `GetHealth_WithoutAuthorizationHeader_Returns200` so it proves `/health` stays anonymous, and add a 405 ProblemDetails test for the first method-specific endpoint (F00 review N1, A13).
 - [ ] F01.2 Admin user management (create, deactivate, reactivate) and the active-flag check on every authenticated request.
 
 ### F02 Clients
@@ -186,3 +199,6 @@ The brief's F05, F07 to F10, F12 and F14 to F19, the client logo (A11), the KMS 
 | Time | Change | Source |
 |---|---|---|
 | 17:30 | Plan created at kickoff: F00 to F02 are Must, and F03, F04, F06 and F11 are Stretch. | /kickoff, Chandan's answers |
+| 18:26 | F00.1 no longer creates `SecuPass.UnitTests`. It comes with the first domain logic, because Microsoft.Testing.Platform fails a run when a test project has zero tests. | Chandan, F00.1 approach gate |
+| 23:43 | F00 review added F00.4 to F00.6 as fix tasks, A14 (amends A13), D12, a README note, and two test additions to F01.1. | /review, Chandan |
+| 00:26 | F00.5 drops review item S2's code change. A probe showed ASP.NET Core already logs a started-response exception at Error with the correlation ID, so the change would have logged it twice. The test stays and pins this. | Chandan, F00.5 |

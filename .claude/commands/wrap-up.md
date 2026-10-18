@@ -25,5 +25,5 @@ From here, no production code changes.
    - model and effort used, and any change during the work with its reason
    - AI usage, from the `/cost` figure I give you
    - where the work departed from the working agreement, if anywhere
-6. `dotnet build`, `dotnet test --no-build` and any provided checker on main one last time. Commit as `docs: README and final status`, push, and confirm `git status` is clean and `git log origin/main -1` matches local.
+6. `dotnet build`, `dotnet test --no-build` and any provided checker on main one last time. Stage the changes, show me `git diff --staged`, and wait for my approval (R2). Then commit as `docs: README and final status`, push, and confirm `git status` is clean and `git log origin/main -1` matches local.
 7. Tell me to stop pushing. Never create tags.

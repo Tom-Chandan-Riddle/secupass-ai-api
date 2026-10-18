@@ -1,0 +1,21 @@
+@baseUrl = http://localhost:5135
+
+### Liveness: 200 "Healthy", never touches a dependency
+GET {{baseUrl}}/health
+
+### Readiness: 200 "Healthy" when Postgres is reachable, 503 "Unhealthy" when it isn't (try `docker compose stop`)
+GET {{baseUrl}}/health/ready
+
+### A correlation ID sent by the caller is echoed in X-Correlation-ID
+GET {{baseUrl}}/health
+X-Correlation-ID: demo-request-001
+
+### A12: an invalid correlation ID is replaced with a generated one, and the request still succeeds
+GET {{baseUrl}}/health
+X-Correlation-ID: not valid;id
+
+### A13: an unknown route returns 404 ProblemDetails with correlationId
+GET {{baseUrl}}/no-such-route
+
+### OpenAPI document (Development only)
+GET {{baseUrl}}/openapi/v1.json

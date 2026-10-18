@@ -16,6 +16,6 @@ Act as a sharp product manager who protects scope and quality.
    - **Feature already merged:** add a new feature, `F0Y CR: <change> (amends F0X)`, with its own branch, criteria and tasks. Leave F0X Done. Mark any of its criteria the change replaces as `superseded by F0Y`.
    - List which done tasks and criteria the change affects, and add a change log row.
 6. Append to PROCESS-LOG.md: ASSUME, PLAN or CUT entries as fit.
-7. Commit on the current branch as `docs: <short summary>` and push.
+7. Stage the changes, show me `git diff --staged`, and wait for my approval (R2). Then commit on the current branch as `docs: <short summary>` and push.
 
 Write no production code in this command.

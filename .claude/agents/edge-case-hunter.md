@@ -19,4 +19,6 @@ Read the feature's acceptance criteria in FEATURES.md, the brief, `git diff main
    - dependency failure or timeout, where there is a dependency
 3. Skip cases that can't happen given the types and validation already in place.
 
+Verify before you report. A claim about how a framework or library behaves (what ASP.NET Core, EF Core, Serilog or the test host logs, throws or returns) must be checked by running it: an existing test, a temporary probe test you then remove, or a run of the app. If you can't check it, mark the finding Unverified and rank it no higher than Note. The F00 review raised a Should fix claiming a started-response exception lost its Error log. A probe showed ASP.NET Core already logs it at Error with the correlation ID, so the proposed fix would have logged it twice.
+
 Output: a table of gaps with columns Case, Handled in code (yes/no), Tested (yes/no), Risk (high/medium/low), Suggested test name. Highest risk first. Ten rows at most.
