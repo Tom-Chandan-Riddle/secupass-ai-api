@@ -68,7 +68,9 @@ The brief's D1 to D4 apply as written: the append-only check-in log, a personal 
 Budget: 2 hours. Must comes to 80 minutes, which is 20 over half; Chandan approved this at 17:30. A checkpoint after F01 decides whether F02 stays in Must. Stretch features are built in the order listed, only if time remains.
 
 ### F00 Foundation
-Priority: Must · Status: Todo · Branch: feature/F00-foundation · Estimate: 25 min
+Priority: Must · Status: In Progress · Branch: feature/F00-foundation · Estimate: 25 min
+
+Approach: `SecuPass.slnx` with `src/SecuPass.Api`, `src/SecuPass.Domain` and `src/SecuPass.Infrastructure` on net10.0. Api references Infrastructure and Domain, Infrastructure references Domain, and Domain references nothing. `Directory.Build.props` sets nullable, `TreatWarningsAsErrors` and `LangVersion` 14 for every project. Cross-cutting code lives in `SecuPass.Api/Infrastructure/` (correlation ID middleware, `GlobalExceptionHandler`, health check registration), and `Program.cs` stays a short list of `Add…`/`Map…` calls. `SecuPass.Infrastructure` holds `SecuPassDbContext` (Npgsql) and its migrations. Tests: xUnit v3 with `Assert`. `tests/SecuPass.IntegrationTests` drives the app through `WebApplicationFactory<Program>`, and from F00.3 against a Testcontainers Postgres fixture. Risk: Testcontainers needs Docker running, so integration tests fail without it. Docker 29.8.2 is now installed, which the setup table doesn't yet reflect.
 
 Acceptance criteria:
 - [ ] The solution builds with no warnings under `TreatWarningsAsErrors`. `bin/` and `obj/` are git-ignored.
@@ -80,7 +82,7 @@ Acceptance criteria:
 - [ ] OpenAPI and Scalar are served in Development only.
 
 Tasks:
-- [ ] F00.1 Solution, Api, Domain and Infrastructure projects, `.gitignore`, `Directory.Build.props`, `.editorconfig`, unit and integration test projects, and `/health` with a passing HTTP test.
+- [x] F00.1 Solution, Api, Domain and Infrastructure projects, `.gitignore`, `Directory.Build.props`, `.editorconfig`, the integration test project, and `/health` with a passing HTTP test. `SecuPass.UnitTests` is added with the first domain logic, because an empty test project fails `dotnet test`.
 - [ ] F00.2 Correlation ID middleware, Serilog JSON request logging, global `IExceptionHandler` with ProblemDetails, OpenAPI with Scalar.
 - [ ] F00.3 Npgsql `DbContext` with migrations auto-applied in Development, a Testcontainers Postgres fixture for integration tests, and `/health/ready`.
 
@@ -186,3 +188,4 @@ The brief's F05, F07 to F10, F12 and F14 to F19, the client logo (A11), the KMS 
 | Time | Change | Source |
 |---|---|---|
 | 17:30 | Plan created at kickoff: F00 to F02 are Must, and F03, F04, F06 and F11 are Stretch. | /kickoff, Chandan's answers |
+| 18:26 | F00.1 no longer creates `SecuPass.UnitTests`. It comes with the first domain logic, because Microsoft.Testing.Platform fails a run when a test project has zero tests. | Chandan, F00.1 approach gate |

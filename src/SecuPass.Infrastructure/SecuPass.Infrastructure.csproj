@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SecuPass.Domain\SecuPass.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

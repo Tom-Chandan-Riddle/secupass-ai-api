@@ -56,6 +56,7 @@ Strength:
 | Invariants guarded in the domain | Rules live in one place and can't be bypassed by a new endpoint. | Strong | The repo puts rules in services. Follow it. |
 | No MediatR, AutoMapper or FluentAssertions v8+ | All three moved to commercial licences in 2025. Adding them to a new codebase is a licensing decision for the codebase owner, not a default. MediatR's main benefit, decoupling, is covered by plain handlers. | Strong for new code | The repo already uses them. Keep them. |
 | No generic repository over EF Core | `DbContext` is already a unit of work and its `DbSet`s are already repositories. A generic wrapper hides EF features and adds a layer. | Preference, widely held | The repo already has one. |
+| Central package management (`Directory.Packages.props`) | Projects that share packages, such as test projects, can't drift onto different versions. Upgrades touch one file. | Preference | The repo pins versions per project. Match it. |
 
 ## Data access and caching
 

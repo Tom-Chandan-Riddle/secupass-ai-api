@@ -74,6 +74,10 @@ Expected depth:
 17:30 · ASSUME · A10 · Changes to an archived client or a Closed event return 422.
 17:30 · ASSUME · A11 · The client logo is deferred, because nothing in Must uses it.
 17:30 · PLAN · — · F00 Foundation, F01 Staff auth and F02 Clients are Must, at 80 minutes. F03 Events, F04 Attendees, F06 QR tokens and F11 QR check-in are Stretch. Chandan accepted Must running 20 minutes over half the budget, with a checkpoint after F01.
+18:32 · NOTE · — · Docker 29.8.2 is now installed and running with Linux containers, so Testcontainers Postgres is available for F00.3. The setup table predates the install.
+18:32 · RULE · R1 · Chandan asked that every question needing Chandan's answer goes through the interactive picker, recommended option first and Other last. Added to CLAUDE.md as R1.
+18:32 · NOTE · — · Test command is `dotnet test --solution SecuPass.slnx --no-build`. xUnit v3 4.x runs on Microsoft.Testing.Platform, which SDK 10 only supports through the `global.json` test runner setting, so the VSTest packages were dropped.
+18:32 · TASK · F00.1 · Solution, Api, Domain and Infrastructure projects, shared build and package props, and `GET /health` with two passing HTTP tests. `SecuPass.UnitTests` was deferred to the first domain logic, because an empty test project fails the run with exit code 8.
 
 ## Summary
 

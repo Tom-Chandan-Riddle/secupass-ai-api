@@ -261,3 +261,5 @@ FEATURES.md, PROCESS-LOG.md, README.md and commit messages are read by other eng
 ## Rules learned during this session
 
 <!-- /feedback appends rules here as R1, R2... -->
+
+- R1: Ask every question that needs my answer through the interactive picker (AskUserQuestion), not as chat text. Each question lists clear options with the recommended one first and marked "(Recommended)", and the last choice is always Other with free text (the picker adds it). Approval gates still show the approach or diff as text, then ask for the decision in the picker.
