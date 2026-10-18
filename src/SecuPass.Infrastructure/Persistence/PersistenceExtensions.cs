@@ -31,10 +31,18 @@ public static partial class PersistenceExtensions
         var dbContext = scope.ServiceProvider.GetRequiredService<SecuPassDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<SecuPassDbContext>>();
 
-        var pendingMigrations = (await dbContext.Database.GetPendingMigrationsAsync(cancellationToken)).ToList();
+        // If another host migrates the same database at the same moment, this host can over-report:
+        // EF's lock means only one applies each migration, but both may see it as new here.
+        var appliedBefore = (await dbContext.Database.GetAppliedMigrationsAsync(cancellationToken)).ToHashSet();
         await dbContext.Database.MigrateAsync(cancellationToken);
+        var newlyAppliedMigrations = (await dbContext.Database.GetAppliedMigrationsAsync(cancellationToken))
+            .Where(migration => !appliedBefore.Contains(migration))
+            .ToList();
 
-        LogMigrationsApplied(logger, pendingMigrations.Count, pendingMigrations);
+        if (newlyAppliedMigrations.Count > 0)
+        {
+            LogMigrationsApplied(logger, newlyAppliedMigrations.Count, newlyAppliedMigrations);
+        }
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Applied {MigrationCount} database migrations: {Migrations}")]

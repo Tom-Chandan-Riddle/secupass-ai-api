@@ -11,6 +11,8 @@ public sealed class CapturingLogSink : ILogEventSink
 
     public void Emit(LogEvent logEvent) => _events.Enqueue(logEvent);
 
+    public IReadOnlyList<LogEvent> AllEvents => [.. _events];
+
     public IReadOnlyList<LogEvent> EventsWithCorrelationId(string correlationId) =>
         [.. _events.Where(logEvent => PropertyText(logEvent, "CorrelationId") == correlationId)];
 

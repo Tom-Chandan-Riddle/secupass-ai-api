@@ -93,7 +93,7 @@ Tasks:
 - [x] F00.3 Npgsql `DbContext` with migrations auto-applied in Development, a Testcontainers Postgres fixture for integration tests, and `/health/ready`.
 - [x] F00.4 fix: replace the flaky startup options test with a direct `IStartupValidator` test, and add the whitespace connection string, repeated `X-Correlation-ID` and Staging cases (review M1, N6).
 - [x] F00.5 fix: `BadHttpRequestException` returns its own 4xx ProblemDetails logged at Warning, an exception after the response started is logged at Error with the correlation ID (S2: no code change, because ASP.NET Core already does this, and a test now pins it), and ProblemDetails is written whatever the `Accept` header (review S1, S2, N3, A14).
-- [ ] F00.6 fix: the migration log names only migrations actually applied and is skipped when none were, and EF Core logs at Warning (review N2, D12).
+- [x] F00.6 fix: the migration log names only migrations actually applied and is skipped when none were, and EF Core logs at Warning (review N2, D12).
 
 Wrap-up note: the README says production connection strings must set `Timeout`, so `/health/ready` fails fast instead of waiting for Npgsql's 15-second default (review N5).
 

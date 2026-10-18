@@ -95,6 +95,7 @@ Expected depth:
 00:20 · NOTE · — · A Visual Studio Installer update (started 00:09, not part of this work) replaced .NET SDK 10.0.100 with 10.0.402 and the runtimes with 10.0.13. Builds failed until it finished at 00:20. All 33 tests pass on 10.0.402, and its test runner no longer shows app console output.
 00:26 · AI-FIX · F00.5 · Review item S2 was wrong. The edge-case-hunter claimed a started-response exception lost its Error log, but a probe showed `ExceptionHandlerMiddleware` already logs it at Error with the exception and correlation ID. The AI had reproduced M1 but passed S2 on unchecked. The change is dropped and a test pins the framework behaviour. Both review agents and `/review` step 3 now require checking framework-behaviour claims before they are reported.
 00:27 · TASK · F00.5 · `BadHttpRequestExceptionHandler` returns the exception's 4xx as ProblemDetails with no detail and logs at Warning (A15). `JsonProblemDetailsFallbackWriter` writes ProblemDetails when the Accept header excludes JSON (A14). A test pins the framework's single Error log for exceptions after the response started (S2, no code change). 33 tests pass, and the 4 new S1 and A14 tests fail without the new code.
+00:35 · TASK · F00.6 · The Development migration log now lists only migrations applied by this host, from a before and after diff, and is skipped when none were. Chandan accepted that two hosts migrating at once can over-report. EF Core logs at Warning (D12). 36 tests pass, and the two new behaviour tests failed before the change.
 
 ## Summary
 
