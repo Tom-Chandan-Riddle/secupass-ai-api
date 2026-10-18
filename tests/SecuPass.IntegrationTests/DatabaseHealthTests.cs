@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 using SecuPass.Infrastructure.Persistence;
 using SecuPass.IntegrationTests.Support;
@@ -61,14 +60,6 @@ public sealed class DatabaseHealthTests(SecuPassApiFactory factory) : IClassFixt
 
         Assert.Empty(pendingMigrations);
         Assert.Contains(appliedMigrations, migration => migration.EndsWith("_InitialCreate", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public void Startup_WithoutConnectionString_FailsWithOptionsValidation()
-    {
-        using var misconfiguredFactory = WithConnectionString(string.Empty);
-
-        Assert.ThrowsAny<OptionsValidationException>(() => misconfiguredFactory.CreateClient());
     }
 
     // Production, so startup doesn't try to migrate a database that isn't there.

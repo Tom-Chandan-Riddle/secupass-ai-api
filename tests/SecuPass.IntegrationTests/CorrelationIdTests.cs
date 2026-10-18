@@ -49,4 +49,20 @@ public sealed class CorrelationIdTests(SecuPassApiFactory factory) : IClassFixtu
             factory.LogSink.EventsWithCorrelationId(returnedId!),
             logEvent => logEvent.Level == LogEventLevel.Warning);
     }
+
+    // A12: repeated headers arrive joined with a comma, which isn't an allowed character.
+    [Fact]
+    public async Task Request_WithRepeatedCorrelationHeader_ReturnsGeneratedIdAndLogsWarning()
+    {
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetWithCorrelationIdAsync(HealthPath, "first-id", "second-id");
+
+        var returnedId = response.CorrelationId();
+        Assert.True(response.IsSuccessStatusCode);
+        Assert.True(Guid.TryParse(returnedId, out _));
+        Assert.Contains(
+            factory.LogSink.EventsWithCorrelationId(returnedId!),
+            logEvent => logEvent.Level == LogEventLevel.Warning);
+    }
 }

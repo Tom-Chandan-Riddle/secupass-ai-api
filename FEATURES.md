@@ -90,7 +90,7 @@ Tasks:
 - [x] F00.1 Solution, Api, Domain and Infrastructure projects, `.gitignore`, `Directory.Build.props`, `.editorconfig`, the integration test project, and `/health` with a passing HTTP test. `SecuPass.UnitTests` is added with the first domain logic, because an empty test project fails `dotnet test`.
 - [x] F00.2 Correlation ID middleware, Serilog JSON request logging, global `IExceptionHandler` with ProblemDetails, OpenAPI with Scalar.
 - [x] F00.3 Npgsql `DbContext` with migrations auto-applied in Development, a Testcontainers Postgres fixture for integration tests, and `/health/ready`.
-- [ ] F00.4 fix: replace the flaky startup options test with a direct `IStartupValidator` test, and add the whitespace connection string, repeated `X-Correlation-ID` and Staging cases (review M1, N6).
+- [x] F00.4 fix: replace the flaky startup options test with a direct `IStartupValidator` test, and add the whitespace connection string, repeated `X-Correlation-ID` and Staging cases (review M1, N6).
 - [ ] F00.5 fix: `BadHttpRequestException` returns its own 4xx ProblemDetails logged at Warning, an exception after the response started is logged at Error with the correlation ID, and ProblemDetails is written whatever the `Accept` header (review S1, S2, N3, A14).
 - [ ] F00.6 fix: the migration log names only migrations actually applied and is skipped when none were, and EF Core logs at Warning (review N2, D12).
 

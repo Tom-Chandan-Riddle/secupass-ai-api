@@ -90,6 +90,7 @@ Expected depth:
 23:43 · DECISION · D12 · EF Core logs at Warning, so SQL commands aren't logged at Information. This overrides the CLAUDE.md default of logging every dependency call, by Chandan's choice at review.
 23:48 · AI-FIX · review · The `docs: review F00` commit (1cd2c84) was committed and pushed without showing Chandan the diff. It added A14, D12, a scope change to F01.1 and three fix tasks. CLAUDE.md read a command as approval to commit, which conflicts with its own gate rule for assumptions and scope.
 23:48 · RULE · R2 · Nothing is committed, pushed or merged until Chandan approves the staged diff, in every command. Added to CLAUDE.md and DEFAULTS.md, and as an explicit gate step in review, pm-drill, checkpoint, ship-feature and wrap-up.
+00:09 · TASK · F00.4 · Replaced the flaky host-start options test with `IStartupValidator` tests for a missing, empty and whitespace connection string plus a valid one. Added tests for a repeated `X-Correlation-ID` and for OpenAPI returning 404 in Staging. 28 tests pass, including 6 suite runs under parallel load.
 
 ## Summary
 

@@ -24,12 +24,14 @@ public sealed class OpenApiTests(SecuPassApiFactory factory) : IClassFixture<Sec
     }
 
     [Theory]
-    [InlineData(OpenApiDocumentPath)]
-    [InlineData(ScalarPath)]
-    public async Task Get_InProduction_Returns404(string path)
+    [InlineData("Production", OpenApiDocumentPath)]
+    [InlineData("Production", ScalarPath)]
+    [InlineData("Staging", OpenApiDocumentPath)]
+    [InlineData("Staging", ScalarPath)]
+    public async Task Get_OutsideDevelopment_Returns404(string environment, string path)
     {
-        using var productionFactory = factory.WithWebHostBuilder(builder => builder.UseEnvironment("Production"));
-        using var client = productionFactory.CreateClient();
+        using var environmentFactory = factory.WithWebHostBuilder(builder => builder.UseEnvironment(environment));
+        using var client = environmentFactory.CreateClient();
 
         using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
 
