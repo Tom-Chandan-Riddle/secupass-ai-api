@@ -62,6 +62,9 @@ Only assumptions I approved. Code that depends on one cites its ID.
 | A24 | A request whose token no longer counts is treated as anonymous: protected endpoints return 401, and anonymous endpoints such as `/health` still work. | It is the same outcome as sending no token, so there is no extra error case. | Chandan, 02:10 |
 | A25 | An Admin can't deactivate their own account. The request returns 422 with ProblemDetails. | It stops an Admin locking themselves out by accident or leaving no active Admin. 422 matches A10 for a well-formed request that breaks a business rule. | Chandan, 02:22 |
 | A26 | Deactivating an inactive user, or reactivating an active one, returns 204 and changes nothing. | The end state is what was asked for, so a retried request is safe. | Chandan, 02:22 |
+| A27 | An email containing whitespace, including leading or trailing spaces, is rejected with 400. Amends A22. | Otherwise `" bob@x "` becomes a second account beside `bob@x` that can't log in with the address typed normally. | Chandan, 02:42 (F01 review S4) |
+| A28 | Login takes about as long for an unknown or inactive email as for a wrong password, so timing doesn't reveal which accounts exist. Amends A16. | A probe showed about 1 ms against 48 ms, which revealed which emails exist despite the matching 401. | Chandan, 02:42 (F01 review S5) |
+| A29 | When a deactivate or reactivate loses a concurrency race, the user is reloaded and the request applied once more, returning 204 as A26 does. A second conflict throws. Amends A26. | Retries sent at the same moment are then as safe as retries sent one after another. | Chandan, 02:42 (F01 review S3) |
 
 A4 (volunteer PWA) is frontend only and doesn't apply to this API.
 
@@ -135,6 +138,13 @@ Tasks:
 - [x] F01.3 Admin creates an Admin or Staff user (`POST /users`), with 400, 403 and 409 cases (A20, A21).
 - [x] F01.4 The user's active flag, checked on every authenticated request with the security stamp (A23, A24), on login and on refresh (D9).
 - [x] F01.5 Admin deactivates and reactivates a user, with 404 for an unknown user.
+- [ ] F01.6 fix: create user returns 400 for an email over 256 characters or containing whitespace (A27), and 409 when two creates race on one email (review M1, S2, S4).
+- [ ] F01.7 fix: the active-user check skips anonymous endpoints, so `/health` never touches the database, and a concurrent deactivate or reactivate is retried once after a reload (A29) (review S1, S3).
+- [ ] F01.8 fix: login checks a dummy password hash for unknown and inactive emails, so timing doesn't reveal accounts (A28) (review S5).
+- [ ] F01.9 fix: tests for the lockout ending, the token lifetime boundaries, refresh while locked out, and the correlation ID on every new error status (review S6, N1, N3, N4).
+- [ ] F01.10 fix: refuse to deactivate the last active Admin, also when two Admins deactivate each other at once (review N2). The assumption is agreed at its approach gate.
+
+Review notes kept, not tasks: an authorization policy that names its own scheme, such as F09's volunteer auth, may re-authenticate and skip the active-user check, so the check must cover that scheme too (N5, unverified). The login, refresh and activation handlers take no `CancellationToken`, because Identity's `UserManager` and `SignInManager` calls accept none (N6).
 
 ### F02 Clients
 Priority: Must · Status: Todo · Branch: feature/F02-clients · Estimate: 25 min
@@ -228,3 +238,4 @@ The brief's F05, F07 to F10, F12 and F14 to F19, the client logo (A11), the KMS 
 | 01:16 | D14 replaces the planned fallback authorization policy with an authenticated route group and an endpoint audit test. | Chandan, F01.1 build |
 | 01:55 | F01.3 split: create user stays in F01.3, and deactivate, reactivate and the active-flag check move to F01.4. Added A20 and A21. | Chandan, F01.3 approach gate |
 | 02:10 | F01.4 split: the active flag and its checks stay in F01.4, and the deactivate and reactivate endpoints move to F01.5. Added A23 and A24. | Chandan, F01.4 approach gate |
+| 02:42 | F01 review added F01.6 to F01.10 as fix tasks, and A27 to A29 (amending A22, A16 and A26). | /review, Chandan |

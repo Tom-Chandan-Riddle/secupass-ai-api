@@ -132,6 +132,10 @@ Expected depth:
 02:22 · ASSUME · A25 · An Admin deactivating their own account gets 422, so no Admin locks themselves out by accident.
 02:22 · ASSUME · A26 · Deactivating an inactive user or reactivating an active one returns 204 and changes nothing, so retries are safe.
 02:27 · TASK · F01.5 · `POST /users/{id}/deactivate` and `/reactivate` let an Admin end and restore a user's access. Deactivation also changes the security stamp, so old tokens stay dead after reactivation. 404 for unknown users, 422 for self-deactivation, and repeat calls are no-ops (A25, A26). 126 tests pass. 13 of 16 new tests failed first, and 10 mutations proved the rest.
+02:42 · REVIEW · F01 · The reviewer and edge-case-hunter agents raised 1 Must fix, 6 Should fix and 6 Notes, and the AI reproduced every Must and Should with a probe before ranking. Chandan accepted all 11 offered items: the 256-character email 500 (M1), `/health` touching the database when a token is sent (S1), 500s from concurrent creates and activation changes (S2, S3), spaced emails (S4), login timing (S5), the untested lockout end (S6), and Notes N1 to N4, including a last-Admin guard. N5 (a future second auth scheme) and N6 (no CancellationToken in Identity's API) are kept as notes. They became fix tasks F01.6 to F01.10.
+02:42 · ASSUME · A27 · An email containing whitespace is rejected with 400, so padded addresses can't create duplicate accounts. Amends A22.
+02:42 · ASSUME · A28 · Login takes about as long for unknown and inactive emails as for a wrong password, so timing doesn't reveal accounts. Amends A16.
+02:42 · ASSUME · A29 · A deactivate or reactivate that loses a concurrency race is reloaded and applied once more, returning 204. Amends A26.
 
 ## Summary
 
