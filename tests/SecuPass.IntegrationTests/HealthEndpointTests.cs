@@ -1,11 +1,10 @@
 using System.Net;
 
-using Microsoft.AspNetCore.Mvc.Testing;
+using SecuPass.IntegrationTests.Support;
 
 namespace SecuPass.IntegrationTests;
 
-public sealed class HealthEndpointTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HealthEndpointTests(SecuPassApiFactory factory) : IClassFixture<SecuPassApiFactory>
 {
     [Fact]
     public async Task GetHealth_WhenAppIsRunning_Returns200WithHealthyBody()

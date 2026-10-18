@@ -78,6 +78,10 @@ Expected depth:
 18:32 · RULE · R1 · Chandan asked that every question needing Chandan's answer goes through the interactive picker, recommended option first and Other last. Added to CLAUDE.md as R1.
 18:32 · NOTE · — · Test command is `dotnet test --solution SecuPass.slnx --no-build`. xUnit v3 4.x runs on Microsoft.Testing.Platform, which SDK 10 only supports through the `global.json` test runner setting, so the VSTest packages were dropped.
 18:32 · TASK · F00.1 · Solution, Api, Domain and Infrastructure projects, shared build and package props, and `GET /health` with two passing HTTP tests. `SecuPass.UnitTests` was deferred to the first domain logic, because an empty test project fails the run with exit code 8.
+22:05 · ASSUME · A12 · An invalid incoming correlation ID (empty, over 64 characters, or outside letters, digits, `-_.:`) is replaced with a generated one and logged at Warning. The request still proceeds.
+22:05 · ASSUME · A13 · Bodyless error responses such as unmatched-route 404s and 405s are returned as ProblemDetails, so clients see one error shape.
+22:17 · AI-FIX · F00.2 · The first Serilog setup let `AddSerilog` own the static `Log.Logger`, so parallel test hosts logged into each other's sinks, and the fix then silenced request logs until the request middleware was given the DI logger. The failing log tests caught both before review.
+22:17 · TASK · F00.2 · Correlation ID middleware (A12), Serilog JSON request logging, a global exception handler returning 500 ProblemDetails with `correlationId`, ProblemDetails for bodyless errors (A13), and OpenAPI with Scalar in Development only. 17 tests pass.
 
 ## Summary
 

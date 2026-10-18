@@ -47,6 +47,8 @@ Only assumptions I approved. Code that depends on one cites its ID.
 | A9 | A Client Viewer who requests another client's record by ID gets 404, not 403. | A 403 would confirm the record exists, which lets a viewer probe other clients' IDs. | Chandan, 17:30 |
 | A10 | Changing an archived client, or anything under it, returns 422 with ProblemDetails. | The request is well formed but breaks a business rule. Closed events are treated the same way. | Chandan, 17:30 |
 | A11 | The client logo is left out of F02. | Image upload and storage is its own feature, and nothing in Must uses it. | Chandan, 17:30 |
+| A12 | An incoming `X-Correlation-ID` is used only if it is 1 to 64 characters of letters, digits, `-`, `_`, `.` and `:`. Otherwise the API generates a new ID, returns that one, and logs a Warning. The request still proceeds. | The value is logged and echoed, so an unchecked one allows log and header injection. A tracing header should never fail a request. | Chandan, 22:05 |
+| A13 | Error responses without a body, such as an unmatched route (404) or a wrong method (405), are returned as ProblemDetails with the correlation ID. | Clients then handle one error shape for every failure. | Chandan, 22:05 |
 
 A4 (volunteer PWA) is frontend only and doesn't apply to this API.
 
@@ -83,7 +85,7 @@ Acceptance criteria:
 
 Tasks:
 - [x] F00.1 Solution, Api, Domain and Infrastructure projects, `.gitignore`, `Directory.Build.props`, `.editorconfig`, the integration test project, and `/health` with a passing HTTP test. `SecuPass.UnitTests` is added with the first domain logic, because an empty test project fails `dotnet test`.
-- [ ] F00.2 Correlation ID middleware, Serilog JSON request logging, global `IExceptionHandler` with ProblemDetails, OpenAPI with Scalar.
+- [x] F00.2 Correlation ID middleware, Serilog JSON request logging, global `IExceptionHandler` with ProblemDetails, OpenAPI with Scalar.
 - [ ] F00.3 Npgsql `DbContext` with migrations auto-applied in Development, a Testcontainers Postgres fixture for integration tests, and `/health/ready`.
 
 ### F01 Staff authentication and roles
