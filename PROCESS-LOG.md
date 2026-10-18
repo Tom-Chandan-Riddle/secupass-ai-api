@@ -102,6 +102,7 @@ Expected depth:
 00:44 · RULE · R5 · Framework behaviour is checked with a test or probe before it shapes code, findings or decisions.
 00:44 · RULE · R6 · App processes started for manual runs are stopped and confirmed gone. Others are stopped only with Chandan's approval.
 00:44 · DECISION · — · `/next-task` now records before the commit gate, checks the SDK, Docker and running processes when orienting, writes START entries, and flags features past 150% of estimate. `/ship-feature` runs the suite three times, once in parallel. The DEFAULTS row for R1 was added.
+00:47 · DECISION · — · `global.json` pins SDK 10.0.100 with `rollForward: latestFeature`, so any 10.0.x SDK from 10.0.100 up builds the repo and a .NET 8 or 11 SDK is never picked by accident. Applied from the F00 retro (C3).
 
 ## Summary
 
