@@ -5,7 +5,10 @@ using SecuPass.Infrastructure.Identity;
 
 namespace SecuPass.Api.Features.Identity.Login;
 
-public sealed partial class LoginHandler(SignInManager<StaffUser> signInManager, ILogger<LoginHandler> logger)
+public sealed partial class LoginHandler(
+    SignInManager<StaffUser> signInManager,
+    DummyPasswordCheck dummyPasswordCheck,
+    ILogger<LoginHandler> logger)
 {
     private const string LoginRejectedTitle = "Invalid email or password";
 
@@ -15,13 +18,19 @@ public sealed partial class LoginHandler(SignInManager<StaffUser> signInManager,
         var user = await signInManager.UserManager.FindByNameAsync(request.Email);
         if (user is null)
         {
-            return Rejected(LoginRejection.UnknownEmail, userId: null);
+            return RejectedWithoutPasswordCheck(LoginRejection.UnknownEmail, userId: null, request.Password);
         }
 
         // D9: an inactive user can't log in, even with the right password.
         if (!user.IsActive)
         {
-            return Rejected(LoginRejection.Inactive, user.Id);
+            return RejectedWithoutPasswordCheck(LoginRejection.Inactive, user.Id, request.Password);
+        }
+
+        // Identity answers a locked-out account without checking the password, so it is handled here (A28).
+        if (await signInManager.UserManager.IsLockedOutAsync(user))
+        {
+            return RejectedWithoutPasswordCheck(LoginRejection.LockedOut, user.Id, request.Password);
         }
 
         signInManager.AuthenticationScheme = IdentityConstants.BearerScheme;
@@ -42,6 +51,13 @@ public sealed partial class LoginHandler(SignInManager<StaffUser> signInManager,
     {
         LogLoginRejected(logger, rejection, userId);
         return TypedResults.Problem(title: LoginRejectedTitle, statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    // A28: these rejections skip the real password check, so the dummy one makes them take as long.
+    private ProblemHttpResult RejectedWithoutPasswordCheck(LoginRejection rejection, Guid? userId, string password)
+    {
+        dummyPasswordCheck.VerifyAgainstDummyHash(password);
+        return Rejected(rejection, userId);
     }
 
     private static LoginRejection RejectionFor(SignInResult result) => result switch

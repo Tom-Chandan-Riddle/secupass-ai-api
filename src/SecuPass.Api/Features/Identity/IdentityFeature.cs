@@ -34,6 +34,7 @@ public static class IdentityFeature
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddSingleton<DummyPasswordCheck>();
         services.AddScoped<LoginHandler>();
         services.AddScoped<RefreshHandler>();
         services.AddScoped<DevelopmentAdminSeeder>();

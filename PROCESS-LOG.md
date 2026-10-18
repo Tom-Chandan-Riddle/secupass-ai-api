@@ -141,6 +141,9 @@ Expected depth:
 02:52 · START · F01.7 · Base commit `acc3190`. The active-user check skips anonymous endpoints, so `/health` never touches the database, and a concurrent deactivate or reactivate is retried once after a reload (A29) (review S1, S3).
 02:53 · ASSUME · A30 · The active-user check runs only on endpoints that require a logged-in user, so `/health`, unknown routes and 405s never query the database. Amends A24.
 03:01 · TASK · F01.7 · The active-user check runs only on endpoints that need a logged-in user (A30), so `/health` returns 200 with a token while the database is down. A deactivate or reactivate that hits a concurrency conflict reloads the user and tries once more (A29), so ten at once all return 204 and log the change once. The mutation run showed a retry without the reload passing the race tests, because the unsaved in-memory change looked like the work was done. A test-only EF interceptor now creates the conflict deterministically, and it fails without the reload. 140 tests pass.
+03:08 · START · F01.8 · Base commit `3c590f5`. Login checks a dummy password hash for unknown and inactive emails, so timing doesn't reveal accounts (A28, review S5).
+03:10 · ASSUME · A28 · Extended to locked-out accounts. Identity answers a locked account without checking the password, about 1 ms, so after five wrong tries the fast answer revealed the account existed.
+03:14 · TASK · F01.8 · Login runs a check against a dummy hash, built with the app's hasher options, for unknown, inactive and locked-out accounts, so those 401s take about as long as a wrong password (A28). Locked-out accounts are now caught before Identity's sign-in, which skipped the password check. 143 tests pass, also with two runs side by side. The three timing tests failed at about 1.5 ms against 50 ms before the change, and four mutations turned them red again.
 
 ## Summary
 

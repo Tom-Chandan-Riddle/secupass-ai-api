@@ -63,7 +63,7 @@ Only assumptions I approved. Code that depends on one cites its ID.
 | A25 | An Admin can't deactivate their own account. The request returns 422 with ProblemDetails. | It stops an Admin locking themselves out by accident or leaving no active Admin. 422 matches A10 for a well-formed request that breaks a business rule. | Chandan, 02:22 |
 | A26 | Deactivating an inactive user, or reactivating an active one, returns 204 and changes nothing. | The end state is what was asked for, so a retried request is safe. | Chandan, 02:22 |
 | A27 | An email containing whitespace, including leading or trailing spaces, is rejected with 400. Amends A22. | Otherwise `" bob@x "` becomes a second account beside `bob@x` that can't log in with the address typed normally. | Chandan, 02:42 (F01 review S4) |
-| A28 | Login takes about as long for an unknown or inactive email as for a wrong password, so timing doesn't reveal which accounts exist. Amends A16. | A probe showed about 1 ms against 48 ms, which revealed which emails exist despite the matching 401. | Chandan, 02:42 (F01 review S5) |
+| A28 | Login takes about as long for an unknown email, an inactive user or a locked-out account as for a wrong password, so timing doesn't reveal which accounts exist. Amends A16. | A probe showed about 1 ms against 48 ms, which revealed which emails exist despite the matching 401. | Chandan, 02:42 (F01 review S5). Locked-out accounts added at 03:10, F01.8 build. |
 | A29 | When a deactivate or reactivate loses a concurrency race, the user is reloaded and the request applied once more, returning 204 as A26 does. A second conflict throws. Amends A26. | Retries sent at the same moment are then as safe as retries sent one after another. | Chandan, 02:42 (F01 review S3) |
 | A30 | The active-user check (A23) runs only on endpoints that require a logged-in user. Anonymous endpoints, unknown routes and wrong methods never query the user, whatever token is sent. Amends A24. | `/health` must never touch the database (F00), and a token sent to an endpoint that needs none changes nothing there. | Chandan, 02:53 (F01 review S1) |
 
@@ -141,7 +141,7 @@ Tasks:
 - [x] F01.5 Admin deactivates and reactivates a user, with 404 for an unknown user.
 - [x] F01.6 fix: create user returns 400 for an email over 256 characters or containing whitespace (A27), and 409 when two creates race on one email (review M1, S2, S4).
 - [x] F01.7 fix: the active-user check skips anonymous endpoints, so `/health` never touches the database, and a concurrent deactivate or reactivate is retried once after a reload (A29) (review S1, S3).
-- [ ] F01.8 fix: login checks a dummy password hash for unknown and inactive emails, so timing doesn't reveal accounts (A28) (review S5).
+- [x] F01.8 fix: login checks a dummy password hash for unknown, inactive and locked-out accounts, so timing doesn't reveal accounts (A28) (review S5).
 - [ ] F01.9 fix: tests for the lockout ending, the token lifetime boundaries, refresh while locked out, and the correlation ID on every new error status (review S6, N1, N3, N4).
 - [ ] F01.10 fix: refuse to deactivate the last active Admin, also when two Admins deactivate each other at once (review N2). The assumption is agreed at its approach gate.
 
