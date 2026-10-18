@@ -74,18 +74,18 @@ The brief's D1 to D4 apply as written: the append-only check-in log, a personal 
 Budget: 2 hours. Must comes to 80 minutes, which is 20 over half; Chandan approved this at 17:30. A checkpoint after F01 decides whether F02 stays in Must. Stretch features are built in the order listed, only if time remains.
 
 ### F00 Foundation
-Priority: Must · Status: In Progress · Branch: feature/F00-foundation · Estimate: 25 min
+Priority: Must · Status: Done · Branch: feature/F00-foundation · Estimate: 25 min
 
 Approach: `SecuPass.slnx` with `src/SecuPass.Api`, `src/SecuPass.Domain` and `src/SecuPass.Infrastructure` on net10.0. Api references Infrastructure and Domain, Infrastructure references Domain, and Domain references nothing. `Directory.Build.props` sets nullable, `TreatWarningsAsErrors` and `LangVersion` 14 for every project. Cross-cutting code lives in `SecuPass.Api/Infrastructure/` (correlation ID middleware, `GlobalExceptionHandler`, health check registration), and `Program.cs` stays a short list of `Add…`/`Map…` calls. `SecuPass.Infrastructure` holds `SecuPassDbContext` (Npgsql) and its migrations. Tests: xUnit v3 with `Assert`. `tests/SecuPass.IntegrationTests` drives the app through `WebApplicationFactory<Program>`, and from F00.3 against a Testcontainers Postgres fixture. Risk: Testcontainers needs Docker running, so integration tests fail without it. Docker 29.8.2 is now installed, which the setup table doesn't yet reflect.
 
 Acceptance criteria:
-- [ ] The solution builds with no warnings under `TreatWarningsAsErrors`. `bin/` and `obj/` are git-ignored.
-- [ ] `GET /health` returns 200 without touching the database. An HTTP integration test proves it.
-- [ ] `GET /health/ready` returns 200 when Postgres is reachable and 503 when it isn't.
-- [ ] An unhandled exception returns 500 ProblemDetails with the correlation ID and no stack trace or internals, and is logged once at Error.
-- [ ] Every response carries `X-Correlation-ID`. An incoming value is echoed back, otherwise one is generated.
-- [ ] Every request is logged as JSON with method, path, status, duration and correlation ID.
-- [ ] OpenAPI and Scalar are served in Development only.
+- [x] The solution builds with no warnings under `TreatWarningsAsErrors`. `bin/` and `obj/` are git-ignored.
+- [x] `GET /health` returns 200 without touching the database. An HTTP integration test proves it.
+- [x] `GET /health/ready` returns 200 when Postgres is reachable and 503 when it isn't.
+- [x] An unhandled exception returns 500 ProblemDetails with the correlation ID and no stack trace or internals, and is logged once at Error.
+- [x] Every response carries `X-Correlation-ID`. An incoming value is echoed back, otherwise one is generated.
+- [x] Every request is logged as JSON with method, path, status, duration and correlation ID. (Tests check the logged properties through a capturing sink. The JSON console format was checked by running the app, because the test host doesn't expose console output.)
+- [x] OpenAPI and Scalar are served in Development only.
 
 Tasks:
 - [x] F00.1 Solution, Api, Domain and Infrastructure projects, `.gitignore`, `Directory.Build.props`, `.editorconfig`, the integration test project, and `/health` with a passing HTTP test. `SecuPass.UnitTests` is added with the first domain logic, because an empty test project fails `dotnet test`.
