@@ -9,9 +9,9 @@ Entries are appended, never edited. Times are IST. Each entry goes into the same
 | Item | Value |
 |---|---|
 | Engineer | Chandan Sushma Shankar |
-| AI coding tool | Claude Code in VS Code. Model and effort: _filled by /kickoff_ |
-| Base commit | _filled by /kickoff_ |
-| Repo state at start | _filled by /kickoff_ |
+| AI coding tool | Claude Code in VS Code. Model and effort: Claude Opus 5.5 (`claude-opus-5-5`), effort low |
+| Base commit | `fde7dac` on `main` (local only: `origin` has no branches yet) |
+| Repo state at start | Greenfield. Brief and workflow docs only, no solution or projects. .NET SDK 10.0.100 installed. No Docker or PostgreSQL on the machine. No checker or test harness provided. |
 
 ## Working agreement
 
@@ -54,6 +54,26 @@ Expected depth:
 -->
 
 ## Log
+
+17:14 · START · — · Base commit fde7dac. The brief asks for an event registration and check-in API. This session builds only the API, with a 2-hour budget.
+17:16 · READ · — · Read TICKET-APP-SPEC.md and TICKET-APP-ARCHITECTURE.md. The repo is greenfield, the .NET 10 SDK is present, and there is no checker, Docker or Postgres. The `origin` remote has no branches, so `git pull` failed. The main risks are scope (15 P0 features), tenant isolation touching every feature, and testing on a different database engine from production.
+17:24 · DECISION · D5 · PostgreSQL with Npgsql and Testcontainers instead of the SQLite default. The brief names Postgres, and the check-in race guard has to be tested on the production engine. Docker Desktop is to be installed by Chandan.
+17:24 · DECISION · D6 · Api, Domain and Infrastructure projects, with a Worker project added when the first queued job arrives. That is one project over the CLAUDE.md ceiling, because the brief asks for an API and a worker.
+17:24 · DECISION · D7 · Local stand-ins replace SQS, SES, KMS and S3. Chandan first picked real AWS SDKs, then switched to stand-ins once KMS was shown to be the first dependency within the 2 hours.
+17:24 · DECISION · D8 · Serilog with JSON console output instead of built-in console logging, because the brief names Serilog.
+17:24 · DECISION · D9 · ASP.NET Core Identity bearer tokens, with an active-flag check on every request to meet the one-minute deactivation rule.
+17:24 · DECISION · D10 · No HTTP resilience handler, because nothing calls out over HTTP while the stand-ins are in place.
+17:24 · ASSUME · A1 · Payment is out of scope, as the brief proposes.
+17:24 · ASSUME · A2 · Counters are open, and the counter is recorded for reporting only, as the brief proposes.
+17:24 · ASSUME · A3 · Rack position is optional, as the brief proposes.
+17:24 · ASSUME · A5 · List endpoints are paginated with a default page size of 50 and a maximum of 200. A larger size returns 400.
+17:24 · ASSUME · A6 · Clients, events and attendees carry an `xmin` row version, and a stale update returns 409.
+17:24 · ASSUME · A7 · Event times are stored as UTC plus an IANA time zone ID.
+17:24 · ASSUME · A8 · Duplicate checks compare emails trimmed and case-insensitive, and phones with separators removed. Duplicates are rejected, not fixed.
+17:30 · ASSUME · A9 · A cross-client read returns 404, so record IDs can't be probed.
+17:30 · ASSUME · A10 · Changes to an archived client or a Closed event return 422.
+17:30 · ASSUME · A11 · The client logo is deferred, because nothing in Must uses it.
+17:30 · PLAN · — · F00 Foundation, F01 Staff auth and F02 Clients are Must, at 80 minutes. F03 Events, F04 Attendees, F06 QR tokens and F11 QR check-in are Stretch. Chandan accepted Must running 20 minutes over half the budget, with a checkpoint after F01.
 
 ## Summary
 

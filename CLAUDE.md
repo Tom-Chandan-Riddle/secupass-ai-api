@@ -72,6 +72,8 @@ Directory.Build.props     nullable, warnings as errors, LangVersion
 
 Organise by feature, not by technical layer. Don't create projects or abstractions the brief doesn't need. Three projects plus tests is the ceiling, and one API project plus tests is fine for a small brief.
 
+This repo (D6): `SecuPass.Api`, `SecuPass.Domain` and `SecuPass.Infrastructure`, with the brief's modules as folders under `SecuPass.Api/Features/<Module>/<UseCase>`. The modules are Identity, ClientsEvents, Attendees, Messaging and CheckIn. `SecuPass.Worker` is added only with the first feature that queues work.
+
 ## .NET conventions
 
 - .NET 10, nullable reference types on, `TreatWarningsAsErrors` in new projects.
@@ -124,6 +126,7 @@ If you're not sure a feature exists in the target version, check by building, do
 The brief and the existing repo decide first. These defaults apply only when neither does, and /kickoff proposes them in the fit check for my approval.
 
 **Database**
+- This repo (D5): PostgreSQL through EF Core with Npgsql. Integration tests use Testcontainers Postgres, which needs Docker running. Concurrency tokens use Postgres `xmin` (A6).
 - No database named: SQLite file through EF Core. It needs no install or Docker, so anyone can clone and run it.
 - Watch for SQLite's limits with EF Core: `decimal` is stored as text, so sorting or summing money in the database fails to translate. If the brief sorts, filters or totals money in queries, raise it in the fit check and propose either PostgreSQL in Docker (with Testcontainers in tests) or storing money as whole minor units (`long` cents) with a value object.
 - The brief needs real concurrency, JSON querying or several services sharing data: propose PostgreSQL.
@@ -169,6 +172,8 @@ Extensibility comes from structure, not from abstractions added in advance.
 - Cross-cutting concerns (errors, logging, correlation ID, validation) live in middleware, filters or shared infrastructure, so new features get them for free.
 - Configuration through options, so behaviour changes without code changes where the brief hints at it.
 - Introduce an interface or strategy only where the brief signals real variation (several providers, rule sets, formats). Name that variation point in the feature's Approach.
+- This repo (D7): AWS services have local stand-ins. `IQrTokenSigner` uses in-process ECDSA P-256 instead of KMS, `IEmailSender` uses a recording fake instead of SES, an outbox table with a `BackgroundService` replaces SQS, and uploads go to the API instead of S3. Don't add AWS SDKs without a CR.
+- This repo (D9): staff authenticate with ASP.NET Core Identity bearer tokens (`MapIdentityApi`, with `/register` not mapped). Every authenticated request checks the user's active flag. A cross-client read returns 404 (A9).
 
 ## Errors
 
@@ -180,6 +185,8 @@ Extensibility comes from structure, not from abstractions added in advance.
 ## Observability
 
 Comprehensive means every event that matters, with context. It doesn't mean logging every method.
+
+This repo (D8): Serilog with JSON console output as the logging provider. Code still logs through `ILogger<T>`.
 
 - Log every business event (created, updated, archived, rejected) at Information, with the entity ID as a structured property.
 - Log every handled failure at Warning, with the reason and the input that caused it (minus personal data).
@@ -194,6 +201,8 @@ Comprehensive means every event that matters, with context. It doesn't mean logg
 - Information for business events, Warning for handled problems, Error for failures. No logging of personal data or secrets.
 
 ## Resilience
+
+This repo (D10): there is no outbound HTTP while the D7 stand-ins are in place, so there's no resilience handler yet.
 
 Only where there's an outbound dependency:
 - `Microsoft.Extensions.Http.Resilience` standard handler on HttpClients: timeout, retry with backoff and jitter, circuit breaker.
