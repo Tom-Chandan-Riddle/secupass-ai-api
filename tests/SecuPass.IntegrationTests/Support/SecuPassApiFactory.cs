@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using Npgsql;
+
 using SecuPass.Api.Features.Identity.DevelopmentAdmin;
 
 using Serilog.Core;
@@ -31,5 +33,16 @@ public sealed class SecuPassApiFactory(PostgresContainerFixture postgres) : WebA
             services.AddSingleton<ILogEventSink>(LogSink);
             services.AddSingleton<IStartupFilter, ThrowingEndpointStartupFilter>();
         });
+    }
+
+    // A database of its own, migrated at startup, for tests that change shared data such as the seeded roles.
+    public WebApplicationFactory<Program> WithFreshDatabase()
+    {
+        var connectionString = new NpgsqlConnectionStringBuilder(postgres.ConnectionString)
+        {
+            Database = $"secupass_{Guid.NewGuid():N}",
+        }.ConnectionString;
+        return WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, configuration) =>
+            configuration.AddInMemoryCollection([new(ConnectionStringKey, connectionString)])));
     }
 }

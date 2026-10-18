@@ -64,3 +64,57 @@ Content-Type: application/json
   "email": "someone@example.com",
   "password": "Some-Passw0rd!"
 }
+
+### Admin creates a Staff user: 201 with userId, email and role, no Location header (A21)
+POST {{baseUrl}}/users
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "email": "staff-member@example.com",
+  "password": "Staff-Passw0rd!",
+  "role": "Staff"
+}
+
+### Same email again, in any case: 409 ProblemDetails
+POST {{baseUrl}}/users
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "email": "STAFF-MEMBER@example.com",
+  "password": "Staff-Passw0rd!",
+  "role": "Staff"
+}
+
+### ClientViewer, or any role other than exactly Admin or Staff: 400 with a Role error (A20)
+POST {{baseUrl}}/users
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "email": "viewer@example.com",
+  "password": "Viewer-Passw0rd!",
+  "role": "ClientViewer"
+}
+
+### Weak password: 400 with Identity's reasons under Password (A16)
+POST {{baseUrl}}/users
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "email": "weak@example.com",
+  "password": "weak",
+  "role": "Staff"
+}
+
+### No token: 401. A Staff or Client Viewer token: 403
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "email": "anyone@example.com",
+  "password": "Any-Passw0rd!",
+  "role": "Staff"
+}

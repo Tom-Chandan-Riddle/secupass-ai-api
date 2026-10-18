@@ -55,6 +55,9 @@ Only assumptions I approved. Code that depends on one cites its ID.
 | A17 | The Development Admin's email and password (`admin@secupass.local`, `Dev-Admin-Passw0rd!`) are committed in `appsettings.Development.json`, like the dev database password. They are for local use only. | A fresh clone runs on the first try, with no user-secrets setup. | Chandan, 01:26 |
 | A18 | If a user with the configured email already exists, the seed leaves it unchanged: no password reset and no role change. | Changes made through the API survive restarts. | Chandan, 01:26 |
 | A19 | If the seed can't create the Admin, for example because the configured password breaks A16's rules, startup fails with Identity's reasons. | A misconfigured dev environment shows up at once, not as a missing login later. It only runs in Development. | Chandan, 01:26 |
+| A20 | Creating a user accepts only the exact role names `Admin` and `Staff`. `ClientViewer` returns 400 until F02.2 adds the client scope, and so does a name in another case, such as `admin`. | The criterion lists Admin and Staff, and a Client Viewer without a client would break A9's scoping. | Chandan, 01:55 |
+| A21 | A created user is returned as 201 with the user ID, email and role, and no `Location` header. | There is no endpoint that gets a user by ID yet, so a Location would point nowhere. | Chandan, 01:55 |
+| A22 | Any email that passes the email format check can be a user's email, including characters such as `'`. Identity's user-name character list is cleared, because the user name is the email. | Identity's default list would reject valid addresses like `o'brien@client.com`. | Chandan, 02:01 |
 
 A4 (volunteer PWA) is frontend only and doesn't apply to this API.
 
@@ -106,7 +109,7 @@ Wrap-up note: the README says production connection strings must set `Timeout`, 
 ### F01 Staff authentication and roles
 Priority: Must · Status: In Progress · Branch: feature/F01-staff-auth · Estimate: 30 min
 
-Approach: `StaffUser : IdentityUser<Guid>` lives in `SecuPass.Infrastructure/Identity`, and `SecuPassDbContext` becomes an `IdentityDbContext` with Guid keys. The Admin, Staff and Client Viewer roles are seeded by the migration (`HasData`), so they exist in every environment, and their names are constants in `SecuPass.Domain/Identity/StaffRoles`. Identity's bearer token handler (`AddBearerToken`) is the only authentication scheme. `AddIdentityApiEndpoints` isn't used, because it also registers Identity's cookie scheme, and `MapIdentityApi` isn't called, because it has no options and always maps `/register` and eight other endpoints (probe, R5). Login and refresh are endpoints in `Api/Features/Identity` that call `SignInManager` with the bearer scheme (D13). `GET /auth/me` returns the caller's user ID, email and role. Features map onto a root route group that requires an authenticated user. Login, refresh, health and OpenAPI are marked `AllowAnonymous`, and a test fails if any mapped endpoint declares neither (D14). User management in F01.3 uses `UserManager` behind an Admin policy. Tests go through HTTP and create their own users with `UserManager`. The test factory turns the Development seed off. Risks: a refresh token could outlive deactivation, so F01.3 must check the active flag on refresh too.
+Approach: `StaffUser : IdentityUser<Guid>` lives in `SecuPass.Infrastructure/Identity`, and `SecuPassDbContext` becomes an `IdentityDbContext` with Guid keys. The Admin, Staff and Client Viewer roles are seeded by the migration (`HasData`), so they exist in every environment, and their names are constants in `SecuPass.Domain/Identity/StaffRoles`. Identity's bearer token handler (`AddBearerToken`) is the only authentication scheme. `AddIdentityApiEndpoints` isn't used, because it also registers Identity's cookie scheme, and `MapIdentityApi` isn't called, because it has no options and always maps `/register` and eight other endpoints (probe, R5). Login and refresh are endpoints in `Api/Features/Identity` that call `SignInManager` with the bearer scheme (D13). `GET /auth/me` returns the caller's user ID, email and role. Features map onto a root route group that requires an authenticated user. Login, refresh, health and OpenAPI are marked `AllowAnonymous`, and a test fails if any mapped endpoint declares neither (D14). User management in F01.3 and F01.4 uses `UserManager` behind an Admin policy. Tests go through HTTP and create their own users with `UserManager`. The test factory turns the Development seed off. Risks: a refresh token could outlive deactivation, so F01.4 must check the active flag on refresh too.
 
 Acceptance criteria:
 - [x] A user logs in with email and password and gets a bearer token. A wrong password or unknown email returns 401.
@@ -115,8 +118,8 @@ Acceptance criteria:
 - [x] `GET /auth/me` returns the caller's user ID, email and role.
 - [x] Any non-health endpoint called without a valid token returns 401.
 - [x] Public self-registration isn't exposed: `POST /register` returns 404.
-- [ ] An Admin can create an Admin or Staff user with email, password and exactly one role. A missing or unknown role returns 400. A weak password returns 400 with Identity's reasons. A duplicate email returns 409.
-- [ ] Staff and Client Viewers calling user management get 403.
+- [x] An Admin can create an Admin or Staff user with email, password and exactly one role. A missing or unknown role returns 400. A weak password returns 400 with Identity's reasons. A duplicate email returns 409.
+- [x] Staff and Client Viewers calling user management get 403.
 - [ ] An Admin can deactivate and reactivate a user. After deactivation, that user's existing token gets 401 on the next request, and login fails. After reactivation, login works again (D9).
 - [ ] Deactivating an unknown user returns 404.
 - [x] In Development, an Admin is seeded from validated options. No user is seeded in tests.
@@ -125,7 +128,8 @@ Acceptance criteria:
 Tasks:
 - [x] F01.1 Identity with bearer login and refresh (D13), lockout (A16), the Admin, Staff and Client Viewer roles, `GET /auth/me`, no `/register`, and 401 for anonymous calls. Also rewrite `GetHealth_WithoutAuthorizationHeader_Returns200` so it proves `/health` stays anonymous, and add a 405 ProblemDetails test for the first method-specific endpoint (F00 review N1, A13).
 - [x] F01.2 The Development Admin seed from validated options, turned off in tests.
-- [ ] F01.3 Admin user management (create, deactivate, reactivate) and the active-flag check on every authenticated request.
+- [x] F01.3 Admin creates an Admin or Staff user (`POST /users`), with 400, 403 and 409 cases (A20, A21).
+- [ ] F01.4 Admin deactivates and reactivates a user, and the active flag is checked on every authenticated request, on login and on refresh (D9).
 
 ### F02 Clients
 Priority: Must · Status: Todo · Branch: feature/F02-clients · Estimate: 25 min
@@ -217,3 +221,4 @@ The brief's F05, F07 to F10, F12 and F14 to F19, the client logo (A11), the KMS 
 | 00:55 | Checkpoint: no fixed time limit any more, and the plan stays as it was. Nothing is cut. | /checkpoint, Chandan |
 | 01:01 | F01.1 split: the Development Admin seed becomes F01.2 and user management becomes F01.3. Added D13 (amends D9), A16, and criteria for lockout, refresh and `GET /auth/me`. | Chandan, F01.1 approach gate |
 | 01:16 | D14 replaces the planned fallback authorization policy with an authenticated route group and an endpoint audit test. | Chandan, F01.1 build |
+| 01:55 | F01.3 split: create user stays in F01.3, and deactivate, reactivate and the active-flag check move to F01.4. Added A20 and A21. | Chandan, F01.3 approach gate |

@@ -9,8 +9,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
-using Npgsql;
-
 using SecuPass.Api.Features.Identity.DevelopmentAdmin;
 using SecuPass.Domain.Identity;
 using SecuPass.Infrastructure.Identity;
@@ -19,8 +17,7 @@ using SecuPass.IntegrationTests.Support;
 
 namespace SecuPass.IntegrationTests.Identity;
 
-public sealed class DevelopmentAdminSeedTests(SecuPassApiFactory factory, PostgresContainerFixture postgres)
-    : IClassFixture<SecuPassApiFactory>
+public sealed class DevelopmentAdminSeedTests(SecuPassApiFactory factory) : IClassFixture<SecuPassApiFactory>
 {
     private const string SeedPassword = "Seed-Admin-Passw0rd!";
 
@@ -102,7 +99,7 @@ public sealed class DevelopmentAdminSeedTests(SecuPassApiFactory factory, Postgr
     public async Task Seed_WhenRoleAssignmentFails_CreatesNoUser()
     {
         var email = NewEmail();
-        using var isolatedHost = WithDatabase($"secupass_{Guid.NewGuid():N}");
+        using var isolatedHost = factory.WithFreshDatabase();
         using var client = isolatedHost.CreateClient();
         await using var scope = isolatedHost.Services.CreateAsyncScope();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
@@ -145,13 +142,6 @@ public sealed class DevelopmentAdminSeedTests(SecuPassApiFactory factory, Postgr
                 new(SecuPassApiFactory.DevelopmentAdminEmailKey, email),
                 new(SecuPassApiFactory.DevelopmentAdminPasswordKey, password),
             ])));
-
-    private WebApplicationFactory<Program> WithDatabase(string databaseName)
-    {
-        var connectionString = new NpgsqlConnectionStringBuilder(postgres.ConnectionString) { Database = databaseName }.ConnectionString;
-        return factory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, configuration) =>
-            configuration.AddInMemoryCollection([new(SecuPassApiFactory.ConnectionStringKey, connectionString)])));
-    }
 
     private static DevelopmentAdminSeeder NewSeeder(IServiceProvider services, string email, string password) => new(
         services.GetRequiredService<UserManager<StaffUser>>(),

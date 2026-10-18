@@ -117,6 +117,12 @@ Expected depth:
 01:26 · ASSUME · A18 · An existing user with the configured email is left unchanged by the seed, so API changes survive restarts.
 01:26 · ASSUME · A19 · A seed that can't create the Admin fails startup with Identity's reasons, so a broken dev setup shows at once.
 01:32 · TASK · F01.2 · In Development the Admin from `appsettings.Development.json` is seeded after migrations, in one transaction, and an existing user is left unchanged (A17, A18). A seed that can't create the Admin stops startup (A19), and the test factory turns the seed off. 81 tests pass. 9 new tests failed against a do-nothing seeder, and 7 mutations turned the rest red.
+01:53 · START · F01.3 · Base commit `6747122`. Admin user management (create, deactivate, reactivate) and the active-flag check on every authenticated request.
+01:55 · PLAN · F01 · F01.3 was about 45 minutes of work, so create user stays in F01.3 and deactivate, reactivate and the active-flag check move to F01.4.
+01:55 · ASSUME · A20 · Creating a user accepts only the exact role names Admin and Staff. ClientViewer returns 400 until F02.2 adds the client scope.
+01:55 · ASSUME · A21 · A created user returns 201 with its ID, email and role and no Location header, because no endpoint gets a user by ID yet.
+02:01 · ASSUME · A22 · Any well-formed email can be a user's email. Identity's user-name character list is cleared, because it rejected valid addresses with characters such as an apostrophe.
+02:05 · TASK · F01.3 · `POST /users` lets an Admin create an Admin or Staff user in one transaction, with 400 for bad input, unsupported roles and weak passwords, 403 for other roles, and 409 for a taken email (A20 to A22). 101 tests pass. All 20 new tests failed before the endpoint existed, and 9 mutations turned the specific ones red.
 
 ## Summary
 

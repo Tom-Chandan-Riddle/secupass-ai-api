@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Identity;
 
+using SecuPass.Api.Features.Identity.CreateUser;
 using SecuPass.Api.Features.Identity.CurrentUser;
 using SecuPass.Api.Features.Identity.DevelopmentAdmin;
 using SecuPass.Api.Features.Identity.Login;
 using SecuPass.Api.Features.Identity.Refresh;
+using SecuPass.Domain.Identity;
 using SecuPass.Infrastructure.Identity;
 using SecuPass.Infrastructure.Persistence;
 
@@ -19,7 +21,8 @@ public static class IdentityFeature
         services.AddAuthorization();
 
         // A16: Identity's default password rules, lockout and token lifetimes.
-        services.AddIdentityCore<StaffUser>()
+        // A22: the user name is the email, so any character a valid email can hold is allowed.
+        services.AddIdentityCore<StaffUser>(options => options.User.AllowedUserNameCharacters = string.Empty)
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<SecuPassDbContext>()
             .AddSignInManager();
@@ -32,6 +35,7 @@ public static class IdentityFeature
         services.AddScoped<LoginHandler>();
         services.AddScoped<RefreshHandler>();
         services.AddScoped<DevelopmentAdminSeeder>();
+        services.AddScoped<CreateUserHandler>();
         return services;
     }
 
@@ -48,6 +52,10 @@ public static class IdentityFeature
         auth.MapLogin();
         auth.MapRefresh();
         auth.MapGetCurrentUser();
+
+        var users = endpoints.MapGroup("/users").WithTags("Users")
+            .RequireAuthorization(policy => policy.RequireRole(StaffRoles.Admin));
+        users.MapCreateUser();
         return endpoints;
     }
 }

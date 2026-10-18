@@ -58,9 +58,14 @@ public static class IdentityTestExtensions
     }
 
     public static async Task<HttpResponseMessage> PostJsonAsync(
-        this HttpClient client, string path, object body, string? correlationId = null)
+        this HttpClient client, string path, object body, string? correlationId = null, string? accessToken = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = JsonContent.Create(body) };
+        if (accessToken is not null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+
         if (correlationId is not null)
         {
             request.Headers.Add(HttpClientExtensions.CorrelationHeader, correlationId);
