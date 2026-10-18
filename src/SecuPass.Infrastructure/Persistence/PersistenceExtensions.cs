@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,14 +17,24 @@ public static partial class PersistenceExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        services.AddDbContext<SecuPassDbContext>((serviceProvider, options) =>
-            options.UseNpgsql(serviceProvider.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString));
+        services.AddDbContext<SecuPassDbContext>((serviceProvider, options) => options
+            .UseNpgsql(serviceProvider.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString)
+            .ConfigureWarnings(LogFailureEventsAtDebug));
 
         services.AddHealthChecks()
             .AddDbContextCheck<SecuPassDbContext>(DatabaseHealthCheckName, tags: [HealthCheckTags.Readiness]);
 
         return services;
     }
+
+    // D16: each of these events comes with an exception that the app either handles and logs at Warning, or the
+    // global handler logs once at Error, so EF Core's own Error copy would be a duplicate. EF Core's Warning floor
+    // (D12) hides Debug, and lowering it shows the failing SQL again when debugging.
+    private static void LogFailureEventsAtDebug(WarningsConfigurationBuilder warnings) => warnings.Log(
+        (RelationalEventId.CommandError, LogLevel.Debug),
+        (RelationalEventId.ConnectionError, LogLevel.Debug),
+        (CoreEventId.SaveChangesFailed, LogLevel.Debug),
+        (CoreEventId.QueryIterationFailed, LogLevel.Debug));
 
     public static async Task MigrateDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken)
     {
