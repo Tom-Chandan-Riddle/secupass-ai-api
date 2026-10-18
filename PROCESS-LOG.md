@@ -136,6 +136,8 @@ Expected depth:
 02:42 · ASSUME · A27 · An email containing whitespace is rejected with 400, so padded addresses can't create duplicate accounts. Amends A22.
 02:42 · ASSUME · A28 · Login takes about as long for unknown and inactive emails as for a wrong password, so timing doesn't reveal accounts. Amends A16.
 02:42 · ASSUME · A29 · A deactivate or reactivate that loses a concurrency race is reloaded and applied once more, returning 204. Amends A26.
+02:44 · START · F01.6 · Base commit `5f001f9`. Create user returns 400 for an email over 256 characters or containing whitespace (A27), and 409 when two creates race (review M1, S2, S4).
+02:49 · TASK · F01.6 · Create user now returns 400 for an email over 256 characters or containing whitespace (A27), and 409 when the unique index stops a racing create. 133 tests pass. The 257-character, whitespace and race tests failed before the fix, and mutations of all three fixes turned them red again.
 
 ## Summary
 

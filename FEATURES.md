@@ -138,7 +138,7 @@ Tasks:
 - [x] F01.3 Admin creates an Admin or Staff user (`POST /users`), with 400, 403 and 409 cases (A20, A21).
 - [x] F01.4 The user's active flag, checked on every authenticated request with the security stamp (A23, A24), on login and on refresh (D9).
 - [x] F01.5 Admin deactivates and reactivates a user, with 404 for an unknown user.
-- [ ] F01.6 fix: create user returns 400 for an email over 256 characters or containing whitespace (A27), and 409 when two creates race on one email (review M1, S2, S4).
+- [x] F01.6 fix: create user returns 400 for an email over 256 characters or containing whitespace (A27), and 409 when two creates race on one email (review M1, S2, S4).
 - [ ] F01.7 fix: the active-user check skips anonymous endpoints, so `/health` never touches the database, and a concurrent deactivate or reactivate is retried once after a reload (A29) (review S1, S3).
 - [ ] F01.8 fix: login checks a dummy password hash for unknown and inactive emails, so timing doesn't reveal accounts (A28) (review S5).
 - [ ] F01.9 fix: tests for the lockout ending, the token lifetime boundaries, refresh while locked out, and the correlation ID on every new error status (review S6, N1, N3, N4).

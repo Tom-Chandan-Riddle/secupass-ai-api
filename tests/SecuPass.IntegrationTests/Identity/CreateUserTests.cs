@@ -142,6 +142,65 @@ public sealed class CreateUserTests(SecuPassApiFactory factory) : IClassFixture<
         Assert.Equal(new CurrentUserResponse(created.UserId, email, role), currentUser);
     }
 
+    // Identity stores emails in varchar(256): one character more must be a 400, not a database error.
+    [Theory]
+    [InlineData(256, HttpStatusCode.Created)]
+    [InlineData(257, HttpStatusCode.BadRequest)]
+    public async Task CreateUser_AtEmailLengthBoundary_AcceptsUpTo256Characters(int length, HttpStatusCode expectedStatus)
+    {
+        using var caller = await LoggedInClientAsync(StaffRoles.Admin);
+        var email = EmailOfLength(length);
+
+        using var response = await caller.Client.PostJsonAsync(UsersPath, NewUserBody(email, StaffRoles.Staff), accessToken: caller.AccessToken);
+
+        if (expectedStatus == HttpStatusCode.BadRequest)
+        {
+            await AssertFieldErrorAsync(response, "Email");
+            Assert.Null(await FindUserAsync(email));
+            return;
+        }
+
+        Assert.Equal(expectedStatus, response.StatusCode);
+    }
+
+    // A27: an email containing whitespace would become a second account that can't log in as typed.
+    [Theory]
+    [InlineData(" lead-{0}@test.secupass.local")]
+    [InlineData("trail-{0}@test.secupass.local ")]
+    [InlineData("in ner-{0}@test.secupass.local")]
+    [InlineData("tab-{0}@test.secupass.local\t")]
+    public async Task CreateUser_WithWhitespaceInEmail_Returns400WithEmailErrorAndCreatesNoUser(string emailFormat)
+    {
+        using var caller = await LoggedInClientAsync(StaffRoles.Admin);
+        var email = string.Format(System.Globalization.CultureInfo.InvariantCulture, emailFormat, Guid.NewGuid().ToString("N"));
+
+        using var response = await caller.Client.PostJsonAsync(UsersPath, NewUserBody(email, StaffRoles.Staff), accessToken: caller.AccessToken);
+
+        await AssertFieldErrorAsync(response, "Email");
+        Assert.Null(await FindUserAsync(email));
+    }
+
+    // Identity checks for a duplicate before inserting, so simultaneous creates race to the unique index.
+    [Fact]
+    public async Task CreateUser_SameEmailConcurrently_ReturnsOne201AndOtherwiseOnly409()
+    {
+        const int simultaneousRequests = 20;
+        using var caller = await LoggedInClientAsync(StaffRoles.Admin);
+        var email = NewEmail();
+
+        var responses = await Task.WhenAll(Enumerable.Range(0, simultaneousRequests).Select(_ =>
+            caller.Client.PostJsonAsync(UsersPath, NewUserBody(email, StaffRoles.Staff), accessToken: caller.AccessToken)));
+
+        var statuses = responses.Select(response => response.StatusCode).ToList();
+        foreach (var response in responses)
+        {
+            response.Dispose();
+        }
+
+        Assert.Single(statuses, status => status == HttpStatusCode.Created);
+        Assert.All(statuses.Where(status => status != HttpStatusCode.Created), status => Assert.Equal(HttpStatusCode.Conflict, status));
+    }
+
     // A22: the user name is the email, so any well-formed email must be accepted.
     [Fact]
     public async Task CreateUser_WithApostropheInEmail_Returns201()
@@ -194,6 +253,13 @@ public sealed class CreateUserTests(SecuPassApiFactory factory) : IClassFixture<
     }
 
     private static string NewEmail() => $"new-{Guid.NewGuid():N}@test.secupass.local";
+
+    private static string EmailOfLength(int length)
+    {
+        const string domain = "@test.secupass.local";
+        var uniquePrefix = Guid.NewGuid().ToString("N");
+        return uniquePrefix + new string('a', length - uniquePrefix.Length - domain.Length) + domain;
+    }
 
     private static object NewUserBody(string? email, string? role, string password = NewUserPassword) =>
         new { email, password, role };

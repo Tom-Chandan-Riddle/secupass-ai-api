@@ -24,7 +24,17 @@ public sealed partial class CreateUserHandler(
         // One transaction, so a failed role assignment can't leave a user without a role.
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         var user = new StaffUser { UserName = request.Email, Email = request.Email };
-        var creation = await userManager.CreateAsync(user, request.Password);
+        IdentityResult creation;
+        try
+        {
+            creation = await userManager.CreateAsync(user, request.Password);
+        }
+        catch (DbUpdateException exception) when (exception.IsUniqueViolationOn(StaffUser.UserNameIndexName))
+        {
+            // Another create with the same email won the race between Identity's duplicate check and the insert.
+            return DuplicateEmail(actorId);
+        }
+
         if (!creation.Succeeded)
         {
             return RejectedByIdentity(creation, actorId);
